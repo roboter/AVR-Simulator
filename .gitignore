@@ -1,4 +1,5 @@
 .DS_STORE
-/obj/
+obj
 /AVR Simulator.suo
 *~
+bin
