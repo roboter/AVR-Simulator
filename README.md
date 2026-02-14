@@ -22,8 +22,8 @@ The base `AVRInterpreter` class provides a foundation for implementing other AVR
 ### Prerequisites
 
 - Windows OS
-- .NET Framework 4.0 or later
-- Visual Studio (2010 or newer) or MSBuild
+- .NET Framework 4.8 or later
+- Visual Studio (2019 or newer) or MSBuild
 
 ### Building with Visual Studio
 
