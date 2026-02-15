@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -22,12 +22,28 @@ namespace AVR_Simulator
 			this.PORTB = new GPIOB(this.IO);
 			this.PORTC = new GPIOC(this.IO);
 			this.PORTD = new GPIOD(this.IO);
+			this.ADCUnit = new ADC(this.RAM);
+			this.EEPROMUnit = new EEPROMController(this.RAM, this.EEPROM);
+			this.Timer0Unit = new Timer0(this.RAM);
+			this.DACUnit = new DAC();
+			this.UARTUnit = new UARTController(this.RAM);
 
 			this.RAMChanged += new NotifyCollectionChangedEventHandler(this.Atmega328Interpreter_RAMChanged);
 		}
 
 		public MappedArray<byte> ExtIO { get; private set; }
-		
+		public ADC ADCUnit { get; private set; }
+		public EEPROMController EEPROMUnit { get; private set; }
+		public Timer0 Timer0Unit { get; private set; }
+		public DAC DACUnit { get; private set; }
+		public UARTController UARTUnit { get; private set; }
+
+		public override void Execute()
+		{
+			base.Execute();
+			this.Timer0Unit.Step(1);
+		}
+
 		public GPIOB PORTB { get; private set; }
 		public GPIOC PORTC { get; private set; }
 		public GPIOD PORTD { get; private set; }
@@ -53,6 +69,192 @@ namespace AVR_Simulator
 					case 0x0B: // PORTD 0x0B (0x2B)
 						this.PORTD.InvokeValueChanged(new GPIOValueChangedEventArgs((byte)e.OldItems[0], (byte)e.NewItems[0]));
 						break;
+				}
+			}
+			else if (e.NewStartingIndex == 0x7A) // ADCSRA
+			{
+				this.ADCUnit.Update();
+			}
+			else if (e.NewStartingIndex == 0x3F) // EECR
+			{
+				this.EEPROMUnit.Update();
+			}
+			else if (e.NewStartingIndex == 0xFE) // Virtual DAC
+			{
+				this.DACUnit.OutputValue = (byte)e.NewItems[0];
+			}
+			else if (e.NewStartingIndex == 0xC6) // UDR0
+			{
+				this.UARTUnit.OnUDR0Write();
+			}
+		}
+
+		public sealed class EEPROMController
+		{
+			public EEPROMController(IList<byte> RAM, byte[] EEPROM)
+			{
+				this.RAM = RAM;
+				this.EEPROM = EEPROM;
+			}
+
+			private IList<byte> RAM;
+			private byte[] EEPROM;
+
+			public void Update()
+			{
+				byte eecr = this.RAM[0x3F];
+				ushort eear = (ushort)((this.RAM[0x42] << 8) | this.RAM[0x41]);
+				eear &= (ushort)(this.EEPROM.Length - 1);
+
+				if ((eecr & 0x01) != 0) // EERE - Read Enable
+				{
+					this.RAM[0x40] = this.EEPROM[eear]; // EEDR
+					this.RAM[0x3F] &= 0xFE; // Clear EERE
+				}
+
+				if ((eecr & 0x02) != 0) // EEPE - Write Enable
+				{
+					// In a real chip, EEMPE must be set first.
+					// For simulation, we check if EEMPE (bit 2) is set.
+					if ((eecr & 0x04) != 0)
+					{
+						this.EEPROM[eear] = this.RAM[0x40]; // EEDR
+						this.RAM[0x3F] &= 0xF9; // Clear EEPE and EEMPE
+					}
+					else
+					{
+						this.RAM[0x3F] &= 0xFD; // Clear EEPE if EEMPE was not set
+					}
+				}
+			}
+		}
+
+		public sealed class Timer0
+		{
+			public Timer0(IList<byte> RAM)
+			{
+				this.RAM = RAM;
+			}
+
+			private IList<byte> RAM;
+			private int prescalerCounter = 0;
+
+			public void Step(int cycles)
+			{
+				byte tccr0b = this.RAM[0x45];
+				int cs = tccr0b & 0x07;
+				if (cs == 0) return; // Stopped
+
+				int divider = 1;
+				switch (cs)
+				{
+					case 1: divider = 1; break;
+					case 2: divider = 8; break;
+					case 3: divider = 64; break;
+					case 4: divider = 256; break;
+					case 5: divider = 1024; break;
+					default: return; // External clock not implemented
+				}
+
+				this.prescalerCounter += cycles;
+				if (this.prescalerCounter >= divider)
+				{
+					int ticks = this.prescalerCounter / divider;
+					this.prescalerCounter %= divider;
+
+					for (int i = 0; i < ticks; i++)
+					{
+						byte tcnt0 = this.RAM[0x46];
+						if (tcnt0 == 0xFF)
+						{
+							this.RAM[0x46] = 0;
+							// Set TOV0 in TIFR0 (0x35)
+							this.RAM[0x35] |= 0x01;
+						}
+						else
+						{
+							this.RAM[0x46]++;
+						}
+					}
+				}
+			}
+		}
+
+		public sealed class DAC
+		{
+			public byte OutputValue { get; set; }
+			public double Voltage => (this.OutputValue / 255.0) * 5.0;
+		}
+
+		public sealed class UARTController
+		{
+			public UARTController(IList<byte> RAM)
+			{
+				this.RAM = RAM;
+				// Initial state: TX Empty
+				this.RAM[0xC0] |= 0x20; // UDRE0
+			}
+
+			private IList<byte> RAM;
+			public event EventHandler<byte> DataTransmitted;
+
+			public void OnUDR0Write()
+			{
+				byte ucsr0b = this.RAM[0xC1];
+				if ((ucsr0b & 0x08) != 0) // TXEN0
+				{
+					byte data = this.RAM[0xC6];
+					this.DataTransmitted?.Invoke(this, data);
+
+					// Set TXC0 (bit 6) and keep UDRE0 (bit 5)
+					this.RAM[0xC0] |= 0x60;
+				}
+			}
+
+			public void ReceiveByte(byte data)
+			{
+				byte ucsr0b = this.RAM[0xC1];
+				if ((ucsr0b & 0x10) != 0) // RXEN0
+				{
+					this.RAM[0xC6] = data;
+					this.RAM[0xC0] |= 0x80; // RXC0
+				}
+			}
+		}
+
+		public sealed class ADC
+		{
+			public ADC(IList<byte> RAM)
+			{
+				this.RAM = RAM;
+			}
+
+			private IList<byte> RAM;
+
+			public double AnalogInput { get; set; } // 0.0 to 5.0
+
+			public void Update()
+			{
+				byte adcsra = this.RAM[0x7A];
+				if ((adcsra & 0x40) != 0) // ADSC is set
+				{
+					// Perform conversion
+					ushort result = (ushort)(Math.Max(0, Math.Min(5.0, this.AnalogInput)) / 5.0 * 1023.0);
+
+					byte admux = this.RAM[0x7C];
+					if ((admux & 0x20) != 0) // ADLAR is set
+					{
+						this.RAM[0x78] = (byte)((result << 6) & 0xFF);
+						this.RAM[0x79] = (byte)(result >> 2);
+					}
+					else
+					{
+						this.RAM[0x78] = (byte)(result & 0xFF);
+						this.RAM[0x79] = (byte)(result >> 8);
+					}
+
+					// Set ADIF, clear ADSC
+					this.RAM[0x7A] = (byte)((adcsra | 0x10) & ~0x40);
 				}
 			}
 		}

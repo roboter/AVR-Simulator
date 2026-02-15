@@ -1,0 +1,38 @@
+name: Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Restore NuGet packages
+      run: nuget restore "AVR Simulator.sln"
+      continue-on-error: true
+
+    - name: Build Solution
+      run: msbuild "AVR Simulator.sln" /p:Configuration=Release /p:Platform=x86
+
+    - name: Prepare Release Artifacts
+      run: |
+        mkdir release
+        copy "bin\Release\AVR Simulator.exe" release\
+        # Include other files if necessary, e.g., LICENSE
+        copy "LICENSE" release\
+        powershell Compress-Archive -Path release\* -DestinationPath AVR_Simulator.zip
+
+    - name: Create Release
+      uses: softprops/action-gh-release@v2
+      with:
+        files: AVR_Simulator.zip
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

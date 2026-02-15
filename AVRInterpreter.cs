@@ -415,8 +415,14 @@ namespace AVR_Simulator
 
 		public virtual void Execute()
 		{
+			if (this.PC >= this.Flash.Length)
+			{
+				this.PC = 0;
+				return;
+			}
+
 			this.Instruction = this.Flash[this.PC];
-			this.Instruction2 = this.Flash[this.PC + 1];
+			this.Instruction2 = (this.PC + 1 < this.Flash.Length) ? this.Flash[this.PC + 1] : (ushort)0;
 
 			this.InstructionMap[this.Instruction].Func();
 		}
