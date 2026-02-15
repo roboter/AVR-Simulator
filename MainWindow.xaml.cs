@@ -63,6 +63,13 @@ namespace AVR_Simulator
 
 			this.Interpreter.ADCUnit.AnalogInput = analogValue;
 			this.CurrentValueText.Text = string.Format("Current ADC Input: {0:F2}V", analogValue);
+
+			if (this.Interpreter.DACUnit != null)
+			{
+				this.DACOutputText.Text = string.Format("DAC Voltage: {0:F2}V (0x{1:X2})",
+					this.Interpreter.DACUnit.Voltage,
+					this.Interpreter.DACUnit.OutputValue);
+			}
 		}
 
 		private void Worker_DoWork(object sender, DoWorkEventArgs e)

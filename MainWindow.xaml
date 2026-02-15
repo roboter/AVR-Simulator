@@ -30,6 +30,10 @@
 			</StackPanel>
 
 			<TextBlock Name="CurrentValueText" Text="Current ADC Input: 0.00V" Margin="0,20,0,0" FontWeight="Bold"/>
+
+			<Separator Margin="0,10"/>
+			<TextBlock Text="Virtual DAC Output" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+			<TextBlock Name="DACOutputText" Text="DAC Voltage: 0.00V (0x00)" FontWeight="Bold"/>
 		</StackPanel>
 	</Grid>
 </Window>
