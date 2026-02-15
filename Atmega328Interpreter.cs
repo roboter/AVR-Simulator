@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -22,12 +22,14 @@ namespace AVR_Simulator
 			this.PORTB = new GPIOB(this.IO);
 			this.PORTC = new GPIOC(this.IO);
 			this.PORTD = new GPIOD(this.IO);
+			this.ADCUnit = new ADC(this.RAM);
 
 			this.RAMChanged += new NotifyCollectionChangedEventHandler(this.Atmega328Interpreter_RAMChanged);
 		}
 
 		public MappedArray<byte> ExtIO { get; private set; }
-		
+		public ADC ADCUnit { get; private set; }
+
 		public GPIOB PORTB { get; private set; }
 		public GPIOC PORTC { get; private set; }
 		public GPIOD PORTD { get; private set; }
@@ -53,6 +55,47 @@ namespace AVR_Simulator
 					case 0x0B: // PORTD 0x0B (0x2B)
 						this.PORTD.InvokeValueChanged(new GPIOValueChangedEventArgs((byte)e.OldItems[0], (byte)e.NewItems[0]));
 						break;
+				}
+			}
+			else if (e.NewStartingIndex == 0x7A) // ADCSRA
+			{
+				this.ADCUnit.Update();
+			}
+		}
+
+		public sealed class ADC
+		{
+			public ADC(IList<byte> RAM)
+			{
+				this.RAM = RAM;
+			}
+
+			private IList<byte> RAM;
+
+			public double AnalogInput { get; set; } // 0.0 to 5.0
+
+			public void Update()
+			{
+				byte adcsra = this.RAM[0x7A];
+				if ((adcsra & 0x40) != 0) // ADSC is set
+				{
+					// Perform conversion
+					ushort result = (ushort)(Math.Max(0, Math.Min(5.0, this.AnalogInput)) / 5.0 * 1023.0);
+
+					byte admux = this.RAM[0x7C];
+					if ((admux & 0x20) != 0) // ADLAR is set
+					{
+						this.RAM[0x78] = (byte)((result << 6) & 0xFF);
+						this.RAM[0x79] = (byte)(result >> 2);
+					}
+					else
+					{
+						this.RAM[0x78] = (byte)(result & 0xFF);
+						this.RAM[0x79] = (byte)(result >> 8);
+					}
+
+					// Set ADIF, clear ADSC
+					this.RAM[0x7A] = (byte)((adcsra | 0x10) & ~0x40);
 				}
 			}
 		}

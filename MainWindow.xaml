@@ -1,9 +1,35 @@
-﻿<Window x:Class="AVR_Simulator.MainWindow"
+<Window x:Class="AVR_Simulator.MainWindow"
 		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		Title="MainWindow" Height="350" Width="525"
+		Title="AVR Simulator" Height="450" Width="600"
 		Loaded="Window_Loaded" Closing="Window_Closing">
 	<Grid>
-		
+		<StackPanel Margin="10">
+			<TextBlock Text="ADC Control" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"/>
+
+			<TextBlock Text="Manual Voltage (0-5V):"/>
+			<DockPanel>
+				<TextBlock Text="{Binding ElementName=VoltageSlider, Path=Value, StringFormat={}{0:F2}V}" Width="50" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="5,0,0,0"/>
+				<Slider Name="VoltageSlider" Minimum="0" Maximum="5" Value="0" TickFrequency="0.1" IsSnapToTickEnabled="False"/>
+			</DockPanel>
+
+			<CheckBox Name="SineWaveCheckBox" Content="Enable Sine Wave Mode" Margin="0,10,0,0"/>
+
+			<StackPanel IsEnabled="{Binding ElementName=SineWaveCheckBox, Path=IsChecked}">
+				<TextBlock Text="Sine Frequency (Hz):" Margin="0,5,0,0"/>
+				<DockPanel>
+					<TextBlock Text="{Binding ElementName=FreqSlider, Path=Value, StringFormat={}{0:F1}Hz}" Width="50" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="5,0,0,0"/>
+					<Slider Name="FreqSlider" Minimum="0.1" Maximum="10" Value="1" TickFrequency="0.1" IsSnapToTickEnabled="False"/>
+				</DockPanel>
+
+				<TextBlock Text="Sine Amplitude (V):" Margin="0,5,0,0"/>
+				<DockPanel>
+					<TextBlock Text="{Binding ElementName=AmpSlider, Path=Value, StringFormat={}{0:F1}V}" Width="50" DockPanel.Dock="Right" VerticalAlignment="Center" Margin="5,0,0,0"/>
+					<Slider Name="AmpSlider" Minimum="0" Maximum="2.5" Value="2.5" TickFrequency="0.1" IsSnapToTickEnabled="False"/>
+				</DockPanel>
+			</StackPanel>
+
+			<TextBlock Name="CurrentValueText" Text="Current ADC Input: 0.00V" Margin="0,20,0,0" FontWeight="Bold"/>
+		</StackPanel>
 	</Grid>
 </Window>
