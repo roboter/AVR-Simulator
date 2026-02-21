@@ -1,12 +1,11 @@
 name: Publish Release
 
 on:
-  workflow_dispatch: {}
   push:
+    branches:
+      - '*'
     tags:
       - 'v*'
-
-
 jobs:
   build:
     runs-on: windows-latest
