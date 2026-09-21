@@ -1,116 +1,108 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="title desc">
-  <title id="title">AVR Simulator hacker icon</title>
-  <desc id="desc">A neon hacker-style app icon with an AVR microcontroller chip and AVR assembly code.</desc>
-  <defs>
-    <radialGradient id="bgGlow" cx="50%" cy="48%" r="64%">
-      <stop offset="0%" stop-color="#10383a"/>
-      <stop offset="48%" stop-color="#08141b"/>
-      <stop offset="100%" stop-color="#020409"/>
-    </radialGradient>
-    <linearGradient id="chipFace" x1="22%" x2="82%" y1="15%" y2="90%">
-      <stop offset="0%" stop-color="#202532"/>
-      <stop offset="46%" stop-color="#090d13"/>
-      <stop offset="100%" stop-color="#05070b"/>
-    </linearGradient>
-    <linearGradient id="pinMetal" x1="0%" x2="100%">
-      <stop offset="0%" stop-color="#31545b"/>
-      <stop offset="52%" stop-color="#b8fff4"/>
-      <stop offset="100%" stop-color="#264047"/>
-    </linearGradient>
-    <linearGradient id="scan" x1="0%" x2="100%">
-      <stop offset="0%" stop-color="#00ff88" stop-opacity="0"/>
-      <stop offset="45%" stop-color="#00ff88" stop-opacity=".58"/>
-      <stop offset="100%" stop-color="#52fff8" stop-opacity="0"/>
-    </linearGradient>
-    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feColorMatrix in="blur" values="0 0 0 0 0  0 0 0 0 1  0 0 0 0 .72  0 0 0 .8 0"/>
-      <feMerge>
-        <feMergeNode/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <filter id="hardGlow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="3" result="blur"/>
-      <feMerge>
-        <feMergeNode in="blur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    <clipPath id="rounded">
-      <rect width="1024" height="1024" rx="180"/>
-    </clipPath>
-  </defs>
-
-  <g clip-path="url(#rounded)">
-    <rect width="1024" height="1024" fill="url(#bgGlow)"/>
-    <path d="M0 716 C184 620 236 756 404 668 S690 548 1024 650 L1024 1024 L0 1024 Z" fill="#031018" opacity=".72"/>
-
-    <g opacity=".32" stroke="#00ff88" stroke-width="3" fill="none" filter="url(#softGlow)">
-      <path d="M90 238 H246 Q286 238 286 278 V354"/>
-      <path d="M72 792 H244 Q318 792 318 718 V646"/>
-      <path d="M934 184 H764 Q708 184 708 240 V326"/>
-      <path d="M908 838 H734 Q674 838 674 778 V690"/>
-      <path d="M210 110 V214 H326"/>
-      <path d="M812 918 V812 H704"/>
-      <circle cx="90" cy="238" r="10" fill="#00ff88"/>
-      <circle cx="934" cy="184" r="10" fill="#52fff8"/>
-      <circle cx="72" cy="792" r="10" fill="#52fff8"/>
-      <circle cx="908" cy="838" r="10" fill="#00ff88"/>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:affinity="https://www.affinity.studio/" style="fill-rule:evenodd;clip-rule:evenodd;">
+    <g>
+        <clipPath id="_clip1">
+            <path d="M844,0C943.345,0 1024,80.655 1024,180L1024,844C1024,943.345 943.345,1024 844,1024L180,1024C80.655,1024 0,943.345 0,844L0,180C0,80.655 80.655,0 180,0L844,0Z"/>
+        </clipPath>
+        <g clip-path="url(#_clip1)">
+            <rect x="0" y="0" width="1024" height="1024" style="fill:url(#_Radial2);"/>
+            <path d="M0,716C184,620 236,756 404,668C572,580 690,548 1024,650L1024,1024L0,1024L0,716Z" style="fill:rgb(3,16,24);fill-opacity:0.72;fill-rule:nonzero;"/>
+            <g opacity="0.32">
+                <path d="M90,238L246,238C272.667,238 286,251.333 286,278L286,354" style="fill:none;fill-rule:nonzero;stroke:rgb(0,255,136);stroke-width:3px;"/>
+                <path d="M72,792L244,792C293.333,792 318,767.333 318,718L318,646" style="fill:none;fill-rule:nonzero;stroke:rgb(0,255,136);stroke-width:3px;"/>
+                <path d="M934,184L764,184C726.667,184 708,202.667 708,240L708,326" style="fill:none;fill-rule:nonzero;stroke:rgb(0,255,136);stroke-width:3px;"/>
+                <path d="M908,838L734,838C694,838 674,818 674,778L674,690" style="fill:none;fill-rule:nonzero;stroke:rgb(0,255,136);stroke-width:3px;"/>
+                <path d="M210,110L210,214L326,214" style="fill:none;fill-rule:nonzero;stroke:rgb(0,255,136);stroke-width:3px;"/>
+                <path d="M812,918L812,812L704,812" style="fill:none;fill-rule:nonzero;stroke:rgb(0,255,136);stroke-width:3px;"/>
+                <circle cx="90" cy="238" r="10" style="fill:rgb(0,255,136);stroke:rgb(0,255,136);stroke-width:3px;"/>
+                <circle cx="934" cy="184" r="10" style="fill:rgb(82,255,248);stroke:rgb(0,255,136);stroke-width:3px;"/>
+                <circle cx="72" cy="792" r="10" style="fill:rgb(82,255,248);stroke:rgb(0,255,136);stroke-width:3px;"/>
+                <circle cx="908" cy="838" r="10" style="fill:rgb(0,255,136);stroke:rgb(0,255,136);stroke-width:3px;"/>
+            </g>
+            <g opacity="0.34">
+                <g transform="matrix(1,0,0,1,84,338)">
+                    <text x="0px" y="0px" style="font-family:'Consolas', monospace;font-size:34px;fill:rgb(125,255,189);">LDI R16,0xFF</text>
+                </g>
+                <g transform="matrix(1,0,0,1,744,310)">
+                    <text x="-112.16px" y="0px" style="font-family:'Consolas', monospace;font-size:34px;fill:rgb(125,255,189);">OUT DDRB,R16</text>
+                </g>
+                <g transform="matrix(1,0,0,1,104,884)">
+                    <text x="0px" y="0px" style="font-family:'Consolas', monospace;font-size:34px;fill:rgb(125,255,189);">RJMP loop</text>
+                </g>
+                <g transform="matrix(1,0,0,1,742,764)">
+                    <text x="0px" y="0px" style="font-family:'Consolas', monospace;font-size:34px;fill:rgb(125,255,189);">SBI PORTB,5</text>
+                </g>
+                <g transform="matrix(1,0,0,1,120,164)">
+                    <text x="0px" y="0px" style="font-family:'Consolas', monospace;font-size:34px;fill:rgb(82,255,248);">loop:</text>
+                </g>
+                <g transform="matrix(1,0,0,1,724,902)">
+                    <text x="0px" y="0px" style="font-family:'Consolas', monospace;font-size:34px;fill:rgb(82,255,248);">IN R18,PINB</text>
+                </g>
+            </g>
+            <g transform="matrix(0.990268,-0.139173,0.139173,0.990268,512,516)">
+                <g opacity="0.9">
+                    <path d="M-338,-204L-416,-204" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear3);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M-338,-144L-432,-144" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear4);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M-338,-84L-416,-84" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear5);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M-338,-24L-432,-24" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear6);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M-338,36L-416,36" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear7);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M-338,96L-432,96" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear8);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M-338,156L-416,156" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear9);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M-338,216L-432,216" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear10);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M338,-204L416,-204" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear11);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M338,-144L432,-144" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear12);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M338,-84L416,-84" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear13);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M338,-24L432,-24" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear14);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M338,36L416,36" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear15);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M338,96L432,96" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear16);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M338,156L416,156" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear17);stroke-width:18px;stroke-linecap:round;"/>
+                    <path d="M338,216L432,216" style="fill:none;fill-rule:nonzero;stroke:url(#_Linear18);stroke-width:18px;stroke-linecap:round;"/>
+                </g>
+            </g>
+            <g transform="matrix(0.990268,-0.139173,0.139173,0.990268,512,516)">
+                <path d="M280,-278C312.011,-278 338,-252.011 338,-220L338,220C338,252.011 312.011,278 280,278L-280,278C-312.011,278 -338,252.011 -338,220L-338,-220C-338,-252.011 -312.011,-278 -280,-278L280,-278Z" style="fill:rgb(2,6,10);fill-opacity:0.75;"/>
+            </g>
+            <g transform="matrix(0.990268,-0.139173,0.139173,0.990268,512,516)">
+                <path d="M270,-258C296.492,-258 318,-236.492 318,-210L318,210C318,236.492 296.492,258 270,258L-270,258C-296.492,258 -318,236.492 -318,210L-318,-210C-318,-236.492 -296.492,-258 -270,-258L270,-258Z" style="fill:url(#_Linear19);stroke:rgb(95,255,240);stroke-width:5px;"/>
+            </g>
+            <g transform="matrix(0.990268,-0.139173,0.139173,0.990268,512,516)">
+                <path d="M250,-222C267.661,-222 282,-207.661 282,-190L282,190C282,207.661 267.661,222 250,222L-250,222C-267.661,222 -282,207.661 -282,190L-282,-190C-282,-207.661 -267.661,-222 -250,-222L250,-222Z" style="fill:none;stroke:rgb(0,255,136);stroke-opacity:0.42;stroke-width:2px;"/>
+            </g>
+            <g transform="matrix(0.990268,-0.139173,0.139173,0.990268,512,516)">
+                <circle cx="-250" cy="-190" r="17" style="fill:rgb(17,25,37);stroke:rgb(86,255,240);stroke-width:4px;"/>
+            </g>
+            <g transform="matrix(1.903424,-0.267509,0.267509,1.903424,519.029096,589.143221)">
+                <text x="-147.649px" y="0px" style="font-family:'Arial-BoldMT', 'Arial', sans-serif;font-weight:700;font-size:132px;fill:rgb(217,255,248);">A<tspan x="-48.92px 52.323px " y="0px 0px ">VR</tspan></text>
+            </g>
+            <g opacity="0.4">
+                <rect x="0" y="0" width="1024" height="1024" style="fill:none;stroke:rgb(157,255,246);stroke-width:18px;"/>
+                <path d="M832,38C916.995,38 986,107.005 986,192L986,832C986,916.995 916.995,986 832,986L192,986C107.005,986 38,916.995 38,832L38,192C38,107.005 107.005,38 192,38L832,38Z" style="fill:none;stroke:rgb(0,255,136);stroke-width:2px;"/>
+            </g>
+            <g transform="matrix(0.990268,-0.139173,0.139173,0.990268,-62.655378,75.986346)">
+                <rect x="-130" y="476" width="1284" height="20" style="fill:url(#_Linear20);"/>
+            </g>
+        </g>
     </g>
-
-    <g font-family="Consolas, 'Courier New', monospace" font-size="34" fill="#7dffbd" opacity=".34" filter="url(#hardGlow)">
-      <text x="84" y="338">LDI R16,0xFF</text>
-      <text x="744" y="310" text-anchor="middle">OUT DDRB,R16</text>
-      <text x="104" y="884">RJMP loop</text>
-      <text x="742" y="764">SBI PORTB,5</text>
-      <text x="120" y="164" fill="#52fff8">loop:</text>
-      <text x="724" y="902" fill="#52fff8">IN R18,PINB</text>
-    </g>
-
-    <g transform="translate(512 516) rotate(-8)">
-      <g stroke="url(#pinMetal)" stroke-width="18" stroke-linecap="round" opacity=".9">
-        <path d="M-338 -204 H-416"/>
-        <path d="M-338 -144 H-432"/>
-        <path d="M-338 -84 H-416"/>
-        <path d="M-338 -24 H-432"/>
-        <path d="M-338 36 H-416"/>
-        <path d="M-338 96 H-432"/>
-        <path d="M-338 156 H-416"/>
-        <path d="M-338 216 H-432"/>
-        <path d="M338 -204 H416"/>
-        <path d="M338 -144 H432"/>
-        <path d="M338 -84 H416"/>
-        <path d="M338 -24 H432"/>
-        <path d="M338 36 H416"/>
-        <path d="M338 96 H432"/>
-        <path d="M338 156 H416"/>
-        <path d="M338 216 H432"/>
-      </g>
-
-      <rect x="-338" y="-278" width="676" height="556" rx="58" fill="#02060a" opacity=".75" filter="url(#softGlow)"/>
-      <rect x="-318" y="-258" width="636" height="516" rx="48" fill="url(#chipFace)" stroke="#5ffff0" stroke-width="5"/>
-      <rect x="-282" y="-222" width="564" height="444" rx="32" fill="none" stroke="#00ff88" stroke-width="2" opacity=".42"/>
-      <circle cx="-250" cy="-190" r="17" fill="#111925" stroke="#56fff0" stroke-width="4"/>
-
-      <g filter="url(#hardGlow)">
-        <text x="0" y="-20" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-weight="800" font-size="132" fill="#d9fff8" letter-spacing="10">AVR</text>
-        <text x="0" y="62" text-anchor="middle" font-family="Consolas, 'Courier New', monospace" font-size="34" fill="#00ff88">ATmega core</text>
-      </g>
-
-      <g stroke="#00ff88" stroke-width="5" stroke-linecap="round" opacity=".7" filter="url(#hardGlow)">
-        <path d="M-214 118 H-94 L-56 154 H96 L134 118 H218"/>
-        <path d="M-210 -114 H-138 L-108 -146 H36 L70 -114 H214"/>
-        <path d="M-188 172 H-16"/>
-        <path d="M70 172 H206"/>
-      </g>
-    </g>
-
-    <g opacity=".4">
-      <rect x="0" y="0" width="1024" height="1024" fill="none" stroke="#9dfff6" stroke-width="18"/>
-      <rect x="38" y="38" width="948" height="948" rx="154" fill="none" stroke="#00ff88" stroke-width="2"/>
-    </g>
-
-    <rect x="-130" y="476" width="1284" height="20" fill="url(#scan)" opacity=".55" transform="rotate(-8 512 486)"/>
-  </g>
+    <defs>
+        <radialGradient id="_Radial2" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="matrix(655.36,0,0,655.36,512,491.52)"><stop offset="0" style="stop-color:rgb(16,56,58);stop-opacity:1"/><stop offset="0.48" style="stop-color:rgb(8,20,27);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(2,4,9);stop-opacity:1"/></radialGradient>
+        <linearGradient id="_Linear3" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,32032,-204)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear4" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,40176,-144)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear5" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,32032,-84)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear6" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,40176,-24)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear7" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,32032,36)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear8" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,40176,96)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear9" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,32032,156)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear10" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,40176,216)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear11" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,-26026,-204)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear12" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,-31434,-144)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear13" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,-26026,-84)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear14" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,-31434,-24)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear15" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,-26026,36)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear16" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,-31434,96)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear17" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,-26026,156)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear18" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(0.000002,0,0,0.000002,-31434,216)"><stop offset="0" style="stop-color:rgb(49,84,91);stop-opacity:1"/><stop offset="0.52" style="stop-color:rgb(184,255,244);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(38,64,71);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear19" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(381.6,387,-387,381.6,-178.08,-180.6)"><stop offset="0" style="stop-color:rgb(32,37,50);stop-opacity:1"/><stop offset="0.46" style="stop-color:rgb(9,13,19);stop-opacity:1"/><stop offset="1" style="stop-color:rgb(5,7,11);stop-opacity:1"/></linearGradient>
+        <linearGradient id="_Linear20" x1="0" y1="0" x2="1" y2="0" gradientUnits="userSpaceOnUse" gradientTransform="matrix(1284,0,0,1284,-130,476)"><stop offset="0" style="stop-color:rgb(0,255,136);stop-opacity:0"/><stop offset="0.45" style="stop-color:rgb(0,255,136);stop-opacity:0.32"/><stop offset="1" style="stop-color:rgb(82,255,248);stop-opacity:0"/></linearGradient>
+    </defs>
 </svg>
