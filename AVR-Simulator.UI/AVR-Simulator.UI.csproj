@@ -9,6 +9,7 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <PlatformTarget>x86</PlatformTarget>
+    <ApplicationIcon>Assets\avr-hacker-icon.svg</ApplicationIcon>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)'=='Debug'">
@@ -29,6 +30,7 @@
 
   <!-- Copy sample HEX next to the executable -->
   <ItemGroup>
+    <Content Include="Assets\avr-hacker-icon.svg" />
     <Content Include="Blink.hex">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
