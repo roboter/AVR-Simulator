@@ -5,6 +5,11 @@ on:
     tags:
       - 'v*'
   workflow_dispatch:
+    inputs:
+      tag_name:
+        description: 'Release tag (e.g. v1.0.2)'
+        required: false
+        default: 'v1.0.2'
 
 permissions:
   contents: write
@@ -31,18 +36,17 @@ jobs:
       - name: Restore NuGet packages
         run: dotnet restore "AVR Simulator.sln"
 
-      - name: Build Solution
-        run: dotnet build -c Release "AVR Simulator.sln" --no-restore
-
-      - name: Prepare Release Artifacts
+      - name: Publish Single-File Release
         shell: powershell
         run: |
           New-Item -ItemType Directory -Force -Path release
 
-          Copy-Item `
-            -Path "AVR-Simulator.UI\bin\x86\Release\net10.0-windows\*" `
-            -Destination "release\" `
-            -Recurse
+          dotnet publish "AVR-Simulator.UI\AVR-Simulator.UI.csproj" `
+            -c Release `
+            -r win-x86 `
+            --self-contained false `
+            -p:PublishSingleFile=true `
+            -o release
 
           Copy-Item "LICENSE" "release\"
 
@@ -51,12 +55,25 @@ jobs:
             -DestinationPath "AVR_Simulator.zip" `
             -Force
 
-      - name: Create Release
+      - name: Upload Artifacts to Workflow Run
+        uses: actions/upload-artifact@v4
+        with:
+          name: AVR-Simulator-${{ inputs.tag_name || github.ref_name }}
+          path: |
+            AVR_Simulator.zip
+            release/
+
+      - name: Save Artifacts to Release Page
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
-          name: AVR Simulator ${{ github.ref_name }}
-          files: AVR_Simulator.zip
+          tag_name: ${{ inputs.tag_name || github.ref_name }}
+          name: AVR Simulator ${{ inputs.tag_name || github.ref_name }}
+          files: |
+            AVR_Simulator.zip
+            release/AVR Simulator.exe
+            release/Blink.hex
+            release/Blink.c
           generate_release_notes: true
+          make_latest: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
