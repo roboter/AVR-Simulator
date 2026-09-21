@@ -99,8 +99,6 @@ namespace AVR_Simulator
 
 		public MainWindow()
 		{
-			ConsoleManager.Show();
-
 			InitializeComponent();
 
 			// Ctrl+O → Load
