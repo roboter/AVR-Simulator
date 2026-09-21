@@ -1,0 +1,7 @@
+{
+  "profiles": {
+    "AVR Simulator": {
+      "commandName": "Project"
+    }
+  }
+}
