@@ -1,5 +1,8 @@
 {
   "profiles": {
+    "AVR-Simulator.UI": {
+      "commandName": "Project"
+    },
     "AVR Simulator": {
       "commandName": "Project"
     }
