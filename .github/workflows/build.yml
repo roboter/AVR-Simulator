@@ -11,12 +11,15 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        global-json-file: 'Directory.Build.props'
+        source-priority: 'critical' # Make NuGet.org primary
 
     - name: Restore NuGet packages
-      run: nuget restore "AVR Simulator.sln"
-      continue-on-error: true # Project might not have NuGet packages
+      run: dotnet restore "AVR Simulator.sln"
 
     - name: Build Solution
-      run: msbuild "AVR Simulator.sln" /p:Configuration=Release /p:Platform=x86
+      run: dotnet build -c Release "AVR Simulator.sln"

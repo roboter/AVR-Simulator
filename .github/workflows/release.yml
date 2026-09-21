@@ -18,21 +18,23 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+    - name: Setup .NET 10
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '10.0.x'
+        global-json-file: 'Directory.Build.props'
+        source-priority: 'critical'
 
     - name: Restore NuGet packages
-      run: nuget restore "AVR Simulator.sln"
-      continue-on-error: true
+      run: dotnet restore "AVR Simulator.sln"
 
     - name: Build Solution
-      run: msbuild "AVR Simulator.sln" /p:Configuration=Release /p:Platform=x86
+      run: dotnet build -c Release "AVR Simulator.sln"
 
     - name: Prepare Release Artifacts
       run: |
         mkdir release
-        copy "bin\Release\AVR Simulator.exe" release\
-        # Include other files if necessary, e.g., LICENSE
+        copy "AVR-Simulator.UI\bin\x86\Release\net10.0-windows\AVR Simulator.exe" release\
         copy "LICENSE" release\
         powershell Compress-Archive -Path release\* -DestinationPath AVR_Simulator.zip
 
