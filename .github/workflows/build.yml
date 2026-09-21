@@ -1,10 +1,15 @@
 name: Build Check
 
 on:
+  push:
+    branches:
+      - main
+      - master
   pull_request:
     branches:
       - main
       - master
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -27,3 +32,6 @@ jobs:
 
       - name: Build Solution
         run: dotnet build -c Release "AVR Simulator.sln" --no-restore
+
+      - name: Run Tests
+        run: dotnet test "AVR Simulator.sln" -c Release --no-build
