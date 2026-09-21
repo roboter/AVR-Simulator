@@ -1,4 +1,4 @@
-name: Build Check
+name: Test
 
 on:
   push:
@@ -10,12 +10,14 @@ on:
       - main
       - master
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
 
 jobs:
-  build:
+  test:
+    name: Build & Test
     runs-on: windows-latest
 
     steps:
@@ -34,4 +36,4 @@ jobs:
         run: dotnet build -c Release "AVR Simulator.sln" --no-restore
 
       - name: Run Tests
-        run: dotnet test "AVR Simulator.sln" -c Release --no-build
+        run: dotnet test "AVR Simulator.sln" -c Release --no-build --verbosity normal

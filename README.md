@@ -9,7 +9,8 @@
 [![Language](https://img.shields.io/badge/language-C%23-239120?style=for-the-badge&logo=csharp&logoColor=white)](https://github.com/roboter/AVR-Simulator)
 [![Framework](https://img.shields.io/badge/.NET-10.0_LTS-512BD4?style=for-the-badge&logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![WPF](https://img.shields.io/badge/UI-WPF-blueviolet?style=for-the-badge&logo=microsoft&logoColor=white)](https://learn.microsoft.com/en-us/dotnet/desktop/wpf/)
-[![Build Check](https://github.com/roboter/AVR-Simulator/actions/workflows/build.yml/badge.svg)](https://github.com/roboter/AVR-Simulator/actions/workflows/build.yml)
+[![Test](https://github.com/roboter/AVR-Simulator/actions/workflows/test.yml/badge.svg)](https://github.com/roboter/AVR-Simulator/actions/workflows/test.yml)
+[![Release](https://github.com/roboter/AVR-Simulator/actions/workflows/release.yml/badge.svg)](https://github.com/roboter/AVR-Simulator/actions/workflows/release.yml)
 
 *Emulate AVR microcontrollers and run programs compiled into Intel HEX format — right on your desktop.*
 
