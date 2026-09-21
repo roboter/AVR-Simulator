@@ -567,13 +567,36 @@ namespace AVR_Simulator
 			{
 				get
 				{
-					return false;
+					return (Direction == GPIOPinDirection.INPUT) && ((IO[PORTx] & nMask) == nMask);
 				}
 				set
 				{
-
+					if (Direction == GPIOPinDirection.INPUT)
+					{
+						if (value)
+							IO[PORTx] |= nMask;
+						else
+							IO[PORTx] &= (byte)~nMask;
+					}
 				}
 			}
+
+			public bool PortBit => (IO[PORTx] & nMask) == nMask;
+			public bool PinBit => (IO[PINx] & nMask) == nMask;
+			public bool DDRBit => (IO[DDRx] & nMask) == nMask;
+
+			public int BitIndex => nMask switch
+			{
+				0x01 => 0,
+				0x02 => 1,
+				0x04 => 2,
+				0x08 => 3,
+				0x10 => 4,
+				0x20 => 5,
+				0x40 => 6,
+				0x80 => 7,
+				_ => 0
+			};
 
 			public void InvokeValueChanged(GPIOPinValueChangedEventArgs e)
 			{

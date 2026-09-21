@@ -8,11 +8,14 @@ using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Effects;
+using System.Windows.Shapes;
 using System.Windows.Threading;
-using Ellipse = System.Windows.Shapes.Ellipse;
+using Microsoft.Win32;
+using Path = System.IO.Path;
 
 namespace AVR_Simulator
 {
@@ -29,14 +32,23 @@ namespace AVR_Simulator
 		private string? CurrentHexPath;
 
 		// ── Pin row descriptor ──────────────────────────────────────────────
-		// Each row is just: pin name label + LED ellipse (+ invisible toggle for input)
 		private class PinRow
 		{
-			public AVRInterpreter.GPIOPin Pin    { get; init; } = null!;
-			public Ellipse                Led    { get; init; } = null!;
-			public DropShadowEffect       Glow   { get; init; } = null!;
-			public ToggleButton           Toggle { get; init; } = null!; // invisible hitbox for INPUT
-			public bool                   LastVal { get; set; } = false;
+			public AVRInterpreter.GPIOPin Pin { get; init; } = null!;
+			public PinDatasheetInfo Info { get; init; } = null!;
+			public Ellipse Led { get; init; } = null!;
+			public DropShadowEffect Glow { get; init; } = null!;
+			public ToggleButton Toggle { get; init; } = null!;
+			public TextBlock DirText { get; init; } = null!;
+			public Border DirBadge { get; init; } = null!;
+			public TextBlock PullUpText { get; init; } = null!;
+			public Border PullUpBadge { get; init; } = null!;
+			public TextBlock LatchText { get; init; } = null!;
+			public bool? LastVal { get; set; }
+			public bool? LastDir { get; set; }
+			public bool? LastPullUp { get; set; }
+			public bool? LastPortBit { get; set; }
+			public bool? LastPinBit { get; set; }
 		}
 
 		private class DisassemblyLine
@@ -70,9 +82,15 @@ namespace AVR_Simulator
 		}
 
 		// ── Brushes ─────────────────────────────────────────────────────────
-		private static readonly SolidColorBrush BrushHigh   = new(Color.FromRgb(0xA6, 0xE3, 0xA1));
-		private static readonly SolidColorBrush BrushLow    = new(Color.FromRgb(0x45, 0x47, 0x5A));
-		private static readonly SolidColorBrush BrushInHigh = new(Color.FromRgb(0x89, 0xB4, 0xFA)); // blue for input HIGH
+		private static readonly SolidColorBrush BrushHigh     = new(Color.FromRgb(0xA6, 0xE3, 0xA1));
+		private static readonly SolidColorBrush BrushLow      = new(Color.FromRgb(0x45, 0x47, 0x5A));
+		private static readonly SolidColorBrush BrushInHigh   = new(Color.FromRgb(0x89, 0xB4, 0xFA));
+		private static readonly SolidColorBrush BrushAmber    = new(Color.FromRgb(0xF9, 0xE2, 0xAF));
+		private static readonly SolidColorBrush BrushDim      = new(Color.FromRgb(0x6C, 0x70, 0x86));
+		private static readonly SolidColorBrush BrushDark     = new(Color.FromRgb(0x18, 0x18, 0x25));
+		private static readonly SolidColorBrush BrushBadgeOut = new(Color.FromRgb(0x28, 0x3D, 0x30));
+		private static readonly SolidColorBrush BrushBadgeIn  = new(Color.FromRgb(0x20, 0x33, 0x47));
+		private static readonly SolidColorBrush BrushBadgePu  = new(Color.FromRgb(0x3D, 0x35, 0x20));
 		private static readonly Color GlowGreen  = Color.FromRgb(0xA6, 0xE3, 0xA1);
 		private static readonly Color GlowBlue   = Color.FromRgb(0x89, 0xB4, 0xFA);
 
@@ -118,26 +136,35 @@ namespace AVR_Simulator
 		// ── Window events ───────────────────────────────────────────────────
 		private void Window_Loaded(object sender, RoutedEventArgs e)
 		{
+			RebuildRecentMenu();
+
 			if (File.Exists(BlinkHexPath))
-				StartEmulation(BlinkHexPath);
+				LoadHex(BlinkHexPath);
 			else
-				SetStatus("No project loaded — use File › Load HEX File");
+				SetStatus("Ready — open a HEX file with File › Load HEX File (Ctrl+O)");
 		}
 
-		private void Window_Closing(object sender, CancelEventArgs e) => StopEmulation();
+		private void Window_Closing(object sender, CancelEventArgs e)
+		{
+			ADCTimer?.Stop();
+			StopEmulation();
+		}
 
-		// ── Menu handlers ────────────────────────────────────────────────────
+		// ── Status bar helper ────────────────────────────────────────────────
+		private void SetStatus(string msg) => StatusText.Text = msg;
+
+		// ── Menu actions ────────────────────────────────────────────────────
 		private void MenuLoad_Click(object sender, RoutedEventArgs e)
 		{
-			var dlg = new Microsoft.Win32.OpenFileDialog
+			var dlg = new OpenFileDialog
 			{
-				Title            = "Load Intel HEX File",
-				Filter           = "Intel HEX files (*.hex)|*.hex|All files (*.*)|*.*",
-				DefaultExt       = ".hex",
-				RestoreDirectory = true,
+				Title      = "Select Intel HEX File",
+				Filter     = "Intel HEX Files (*.hex;*.obj)|*.hex;*.obj|All Files (*.*)|*.*",
+				CheckFileExists = true,
 			};
-			if (dlg.ShowDialog() != true) return;
-			LoadHex(dlg.FileName);
+
+			if (dlg.ShowDialog(this) == true)
+				LoadHex(dlg.FileName);
 		}
 
 		private void MenuBlink_Click(object sender, RoutedEventArgs e)
@@ -196,6 +223,7 @@ namespace AVR_Simulator
 
 			RefreshDisassemblyHighlight(forceScroll: true);
 			RefreshPinRows();
+			RefreshPeripherals();
 			SetStatus(CurrentHexPath != null ? $"Step: {CurrentHexPath}" : "Step");
 		}
 
@@ -242,6 +270,7 @@ namespace AVR_Simulator
 			{
 				BuildPortPanels();
 				BuildDisassembly();
+				RefreshPeripherals();
 			});
 
 			for (; !Worker!.CancellationPending;)
@@ -289,8 +318,11 @@ namespace AVR_Simulator
 			if (Interpreter.DACUnit != null)
 				DACOutputText.Text = $"DAC Voltage: {Interpreter.DACUnit.Voltage:F2} V  (0x{Interpreter.DACUnit.OutputValue:X2})";
 
-			// GPIO LEDs
+			// GPIO LEDs & Register Badges
 			RefreshPinRows();
+
+			// Grouped Peripherals Dashboard
+			RefreshPeripherals();
 
 			// Code window
 			RefreshDisassemblyHighlight();
@@ -319,20 +351,19 @@ namespace AVR_Simulator
 			CurrentInstructionText.Text = "PC: ----";
 		}
 
-		// ── Status bar helper ────────────────────────────────────────────────
-		private void SetStatus(string text) =>
-			Dispatcher.InvokeAsync(() => StatusText.Text = text);
-
-		// ── Recent files ─────────────────────────────────────────────────────
+		// ── Recent files handling ───────────────────────────────────────────
 		private void LoadRecentFiles()
 		{
 			try
 			{
 				if (File.Exists(RecentFilesPath))
-					RecentFiles = JsonSerializer.Deserialize<List<string>>(File.ReadAllText(RecentFilesPath)) ?? new();
+				{
+					string json = File.ReadAllText(RecentFilesPath);
+					RecentFiles = JsonSerializer.Deserialize<List<string>>(json) ?? new();
+					RecentFiles.RemoveAll(f => !File.Exists(f));
+				}
 			}
 			catch { RecentFiles = new(); }
-			RebuildRecentMenu();
 		}
 
 		private void SaveRecentFiles()
@@ -342,7 +373,7 @@ namespace AVR_Simulator
 				Directory.CreateDirectory(Path.GetDirectoryName(RecentFilesPath)!);
 				File.WriteAllText(RecentFilesPath, JsonSerializer.Serialize(RecentFiles));
 			}
-			catch { /* non-critical */ }
+			catch { }
 		}
 
 		private void AddRecentFile(string path)
@@ -358,28 +389,42 @@ namespace AVR_Simulator
 		private void RebuildRecentMenu()
 		{
 			MenuRecent.Items.Clear();
-			MenuRecent.IsEnabled = RecentFiles.Count > 0;
 
-			foreach (string path in RecentFiles)
+			if (RecentFiles.Count == 0)
 			{
+				var empty = new MenuItem
+				{
+					Header = "(No recent files)",
+					IsEnabled = false,
+					Style = (Style)FindResource("DarkMenuItem"),
+				};
+				MenuRecent.Items.Add(empty);
+				return;
+			}
+
+			int i = 1;
+			foreach (var file in RecentFiles)
+			{
+				string captured = file;
 				var item = new MenuItem
 				{
-					Header  = Path.GetFileName(path),
-					ToolTip = path,
-					Style   = (Style)FindResource("DarkMenuItem"),
+					Header = $"_{i++}  {Path.GetFileName(file)}",
+					ToolTip = file,
+					Style = (Style)FindResource("DarkMenuItem"),
 				};
-				var captured = path;
 				item.Click += (s, e) => LoadHex(captured);
 				MenuRecent.Items.Add(item);
 			}
 
-			if (RecentFiles.Count > 0)
+			MenuRecent.Items.Add(new Separator { Background = new SolidColorBrush(Color.FromRgb(0x45, 0x47, 0x5A)) });
+
+			var clearItem = new MenuItem
 			{
-				MenuRecent.Items.Add(new Separator { Background = new SolidColorBrush(Color.FromRgb(0x45, 0x47, 0x5A)) });
-				var clearItem = new MenuItem { Header = "Clear Recent Files", Style = (Style)FindResource("DarkMenuItem") };
-				clearItem.Click += (s, e) => { RecentFiles.Clear(); SaveRecentFiles(); RebuildRecentMenu(); };
-				MenuRecent.Items.Add(clearItem);
-			}
+				Header = "Clear Recent Files",
+				Style = (Style)FindResource("DarkMenuItem"),
+			};
+			clearItem.Click += (s, e) => { RecentFiles.Clear(); SaveRecentFiles(); RebuildRecentMenu(); };
+			MenuRecent.Items.Add(clearItem);
 		}
 
 		// ── Build port panels ────────────────────────────────────────────────
@@ -408,6 +453,8 @@ namespace AVR_Simulator
 				(pd.PD0,"PD0"),(pd.PD1,"PD1"),(pd.PD2,"PD2"),(pd.PD3,"PD3"),
 				(pd.PD4,"PD4"),(pd.PD5,"PD5"),(pd.PD6,"PD6"),(pd.PD7,"PD7"),
 			});
+
+			RefreshPinRows();
 		}
 
 		// ── Code / disassembly window ──────────────────────────────────────
@@ -449,51 +496,43 @@ namespace AVR_Simulator
 				};
 
 				DisassemblyLines.Add(line);
-
-				for (int offset = 0; offset < wordLength; offset++)
-					DisassemblyByAddress[address + offset] = line;
-
-				address += wordLength;
+				DisassemblyByAddress[address] = line;
+				address += Math.Max(wordLength, 1);
 			}
 
-			DisassemblyList.ItemsSource = DisassemblyLines;
-			BuildHexRows(Interpreter, lineCount);
-			HexList.ItemsSource = HexRows;
-			RefreshDisassemblyHighlight(forceScroll: true);
-		}
-
-		private void BuildHexRows(AVRInterpreter interpreter, int wordCount)
-		{
-			const int bytesPerRow = 16;
-			int byteCount = wordCount * 2;
-
-			for (int rowStart = 0; rowStart < byteCount; rowStart += bytesPerRow)
+			int totalBytes = lineCount * 2;
+			for (int byteAddress = 0; byteAddress < totalBytes; byteAddress += 16)
 			{
 				var row = new HexRow
 				{
-					StartByteAddress = rowStart,
-					AddressText = string.Format("{0:X4}", rowStart),
+					StartByteAddress = byteAddress,
+					AddressText = string.Format("{0:X4}", byteAddress),
 				};
 
-				for (int byteAddress = rowStart; byteAddress < Math.Min(rowStart + bytesPerRow, byteCount); byteAddress++)
+				int count = Math.Min(16, totalBytes - byteAddress);
+				for (int offset = 0; offset < count; offset++)
 				{
-					int wordAddress = byteAddress / 2;
-					ushort word = interpreter.Flash[wordAddress];
-					byte value = (byte)((byteAddress % 2 == 0) ? (word & 0xFF) : (word >> 8));
-					string tooltip = DisassemblyByAddress.TryGetValue(wordAddress, out DisassemblyLine? line)
-						? line.TooltipText
-						: string.Empty;
+					int currentByteAddress = byteAddress + offset;
+					int wordAddress = currentByteAddress / 2;
+					ushort word = Interpreter.Flash[wordAddress];
+					byte value = (currentByteAddress % 2 == 0)
+						? (byte)(word & 0xFF)
+						: (byte)(word >> 8);
 
 					row.Bytes.Add(new HexByteCell
 					{
-						ByteAddress = byteAddress,
+						ByteAddress = currentByteAddress,
 						Text = string.Format("{0:X2}", value),
-						TooltipText = tooltip,
+						TooltipText = $"Address: 0x{currentByteAddress:X4} (Word: 0x{wordAddress:X4})",
 					});
 				}
 
 				HexRows.Add(row);
 			}
+
+			DisassemblyList.ItemsSource = DisassemblyLines;
+			HexList.ItemsSource = HexRows;
+			RefreshDisassemblyHighlight(forceScroll: true);
 		}
 
 		private static string FormatInstructionBytes(AVRInterpreter interpreter, int address, int wordLength)
@@ -672,14 +711,16 @@ namespace AVR_Simulator
 			HexList.Items.Refresh();
 		}
 
+		// ── Add pin rows with full datasheet details ─────────────────────────
 		private void AddPinRows(ItemsControl panel,
 			IEnumerable<(AVRInterpreter.GPIOPin pin, string name)> pins)
 		{
-			var rows = new List<Grid>();
+			var rows = new List<Border>();
 
 			foreach (var (pin, name) in pins)
 			{
-				// Glow effect shared between LED states
+				var info = PinCatalog.Get(name);
+
 				var glow = new DropShadowEffect
 				{
 					ShadowDepth = 0,
@@ -688,7 +729,6 @@ namespace AVR_Simulator
 					Color       = GlowGreen,
 				};
 
-				// LED ellipse — filled circle = HIGH, dim ring = LOW
 				var led = new Ellipse
 				{
 					Width             = 10,
@@ -698,11 +738,10 @@ namespace AVR_Simulator
 					StrokeThickness   = 1,
 					VerticalAlignment = VerticalAlignment.Center,
 					Effect            = glow,
-					ToolTip           = name,
-					Cursor            = System.Windows.Input.Cursors.Hand,
+					ToolTip           = $"{name} ({info.ArduinoLabel}) — {info.AlternateDescription}",
+					Cursor            = Cursors.Hand,
 				};
 
-				// Invisible toggle hitbox over the LED — lets user drive INPUT pins
 				var toggle = new ToggleButton
 				{
 					Width             = 10,
@@ -710,81 +749,473 @@ namespace AVR_Simulator
 					Opacity           = 0,
 					VerticalAlignment = VerticalAlignment.Center,
 					Focusable         = false,
-					Cursor            = System.Windows.Input.Cursors.Hand,
-					ToolTip           = $"{name} — click to toggle INPUT",
+					Cursor            = Cursors.Hand,
+					ToolTip           = $"{name} — Click to toggle INPUT level",
 				};
 
 				var capturedPin = pin;
 				toggle.Checked   += (s, e) => { capturedPin.Value = true; };
 				toggle.Unchecked += (s, e) => { capturedPin.Value = false; };
 
-				// Pin name label
-				var label = new TextBlock
+				var ledContainer = new Grid
 				{
-					Text              = name,
-					Style             = (Style)FindResource("PinLabel"),
-				};
-
-				// Compact row: [LED+toggle overlay] [name]
-				var canvas = new Grid
-				{
-					Width             = 10,
-					Height            = 10,
+					Width = 12, Height = 12,
 					VerticalAlignment = VerticalAlignment.Center,
-					Margin            = new Thickness(0, 0, 5, 0),
+					Margin = new Thickness(0, 0, 4, 0),
 				};
-				canvas.Children.Add(led);
-				canvas.Children.Add(toggle);
+				ledContainer.Children.Add(led);
+				ledContainer.Children.Add(toggle);
 
-				var row = new Grid
+				// Pin Name & Bit index
+				var nameBlock = new TextBlock
 				{
-					Height = 16,
-					Margin = new Thickness(0, 1, 0, 1),
+					Text = $"{name} (b{info.BitIndex})",
+					Foreground = new SolidColorBrush(Color.FromRgb(0xCD, 0xD6, 0xF4)),
+					FontFamily = new FontFamily("Consolas"),
+					FontSize = 10,
+					FontWeight = FontWeights.Bold,
+					VerticalAlignment = VerticalAlignment.Center,
+					Width = 52,
 				};
-				row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(15) });
-				row.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
 
-				Grid.SetColumn(canvas, 0);
-				Grid.SetColumn(label,  1);
-				row.Children.Add(canvas);
-				row.Children.Add(label);
-				rows.Add(row);
+				// Direction badge
+				var dirText = new TextBlock
+				{
+					Text = "IN",
+					FontSize = 9,
+					FontFamily = new FontFamily("Consolas"),
+					FontWeight = FontWeights.Bold,
+					Foreground = BrushInHigh,
+					HorizontalAlignment = HorizontalAlignment.Center,
+				};
+				var dirBadge = new Border
+				{
+					Background = BrushBadgeIn,
+					BorderBrush = new SolidColorBrush(Color.FromRgb(0x45, 0x47, 0x5A)),
+					BorderThickness = new Thickness(1),
+					CornerRadius = new CornerRadius(3),
+					Padding = new Thickness(4, 1, 4, 1),
+					Width = 32,
+					Margin = new Thickness(0, 0, 4, 0),
+					VerticalAlignment = VerticalAlignment.Center,
+					Child = dirText,
+				};
 
-				AllPinRows.Add(new PinRow { Pin = pin, Led = led, Glow = glow, Toggle = toggle });
+				// Latches: P:0 I:0
+				var latchText = new TextBlock
+				{
+					Text = "P:0 I:0",
+					FontSize = 9,
+					FontFamily = new FontFamily("Consolas"),
+					Foreground = BrushDim,
+					Width = 42,
+					VerticalAlignment = VerticalAlignment.Center,
+					Margin = new Thickness(0, 0, 4, 0),
+				};
+
+				// Pull-Up badge
+				var pullUpText = new TextBlock
+				{
+					Text = "—",
+					FontSize = 9,
+					FontFamily = new FontFamily("Consolas"),
+					Foreground = BrushDim,
+					HorizontalAlignment = HorizontalAlignment.Center,
+				};
+				var pullUpBadge = new Border
+				{
+					Background = Brushes.Transparent,
+					CornerRadius = new CornerRadius(3),
+					Padding = new Thickness(3, 1, 3, 1),
+					Width = 38,
+					Margin = new Thickness(0, 0, 4, 0),
+					VerticalAlignment = VerticalAlignment.Center,
+					Child = pullUpText,
+				};
+
+				// Alternate functions tag
+				var altText = new TextBlock
+				{
+					Text = info.AlternateFunctions,
+					Foreground = new SolidColorBrush(Color.FromRgb(0xCB, 0xA6, 0xF7)),
+					FontFamily = new FontFamily("Segoe UI"),
+					FontSize = 9,
+					TextTrimming = TextTrimming.CharacterEllipsis,
+					VerticalAlignment = VerticalAlignment.Center,
+					ToolTip = $"{name} Alternate Functions:\n{info.AlternateDescription}\nPhysical: {info.PhysicalPin} | Arduino: {info.ArduinoLabel}",
+				};
+
+				var rowGrid = new Grid { VerticalAlignment = VerticalAlignment.Center };
+				rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(14) }); // LED
+				rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(54) }); // Name
+				rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(36) }); // Dir
+				rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(44) }); // Latches
+				rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(40) }); // PU
+				rowGrid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) }); // Alt
+
+				Grid.SetColumn(ledContainer, 0);
+				Grid.SetColumn(nameBlock,    1);
+				Grid.SetColumn(dirBadge,     2);
+				Grid.SetColumn(latchText,    3);
+				Grid.SetColumn(pullUpBadge,  4);
+				Grid.SetColumn(altText,      5);
+
+				rowGrid.Children.Add(ledContainer);
+				rowGrid.Children.Add(nameBlock);
+				rowGrid.Children.Add(dirBadge);
+				rowGrid.Children.Add(latchText);
+				rowGrid.Children.Add(pullUpBadge);
+				rowGrid.Children.Add(altText);
+
+				var rowBorder = new Border
+				{
+					Background = Brushes.Transparent,
+					Padding = new Thickness(4, 2, 4, 2),
+					Margin = new Thickness(0, 1, 0, 1),
+					CornerRadius = new CornerRadius(4),
+					Child = rowGrid,
+				};
+
+				rows.Add(rowBorder);
+
+				AllPinRows.Add(new PinRow
+				{
+					Pin = pin,
+					Info = info,
+					Led = led,
+					Glow = glow,
+					Toggle = toggle,
+					DirText = dirText,
+					DirBadge = dirBadge,
+					PullUpText = pullUpText,
+					PullUpBadge = pullUpBadge,
+					LatchText = latchText,
+				});
 			}
 
 			panel.ItemsSource = rows;
 		}
 
-		// ── Refresh all pin LEDs each tick ──────────────────────────────────
+		// ── Refresh all pin LEDs and badges each tick ───────────────────────
 		private void RefreshPinRows()
 		{
+			if (Interpreter == null) return;
+
 			foreach (var row in AllPinRows)
 			{
 				bool isOutput = row.Pin.Direction == AVRInterpreter.GPIOPinDirection.OUTPUT;
 				bool val      = row.Pin.Value;
+				bool pullUp   = row.Pin.PullUp;
+				bool portBit  = row.Pin.PortBit;
+				bool pinBit   = row.Pin.PinBit;
 
-				if (val == row.LastVal) continue; // skip no-change
-				row.LastVal = val;
-
-				if (val)
+				// LED state
+				if (val != row.LastVal || isOutput != row.LastDir)
 				{
-					row.Led.Fill      = isOutput ? BrushHigh : BrushInHigh;
-					row.Led.Stroke    = isOutput ? BrushHigh : BrushInHigh;
-					row.Glow.Color    = isOutput ? GlowGreen : GlowBlue;
-					row.Glow.Opacity  = 0.9;
-					row.Glow.BlurRadius = 10;
-				}
-				else
-				{
-					row.Led.Fill      = BrushLow;
-					row.Led.Stroke    = new SolidColorBrush(Color.FromRgb(0x58, 0x5B, 0x70));
-					row.Glow.Opacity  = 0;
+					row.LastVal = val;
+					if (val)
+					{
+						row.Led.Fill        = isOutput ? BrushHigh : BrushInHigh;
+						row.Led.Stroke      = isOutput ? BrushHigh : BrushInHigh;
+						row.Glow.Color      = isOutput ? GlowGreen : GlowBlue;
+						row.Glow.Opacity    = 0.9;
+						row.Glow.BlurRadius = 10;
+					}
+					else
+					{
+						row.Led.Fill        = BrushLow;
+						row.Led.Stroke      = new SolidColorBrush(Color.FromRgb(0x58, 0x5B, 0x70));
+						row.Glow.Opacity    = 0;
+					}
 				}
 
-				// Keep toggle in sync for INPUT pins (avoid re-triggering)
+				// Direction badge
+				if (isOutput != row.LastDir)
+				{
+					row.LastDir = isOutput;
+					if (isOutput)
+					{
+						row.DirText.Text = "OUT";
+						row.DirText.Foreground = BrushHigh;
+						row.DirBadge.Background = BrushBadgeOut;
+					}
+					else
+					{
+						row.DirText.Text = "IN";
+						row.DirText.Foreground = BrushInHigh;
+						row.DirBadge.Background = BrushBadgeIn;
+					}
+				}
+
+				// Latches (P:x I:x)
+				if (portBit != row.LastPortBit || pinBit != row.LastPinBit)
+				{
+					row.LastPortBit = portBit;
+					row.LastPinBit = pinBit;
+					row.LatchText.Text = $"P:{(portBit ? 1 : 0)} I:{(pinBit ? 1 : 0)}";
+				}
+
+				// Pull-up badge
+				if (pullUp != row.LastPullUp)
+				{
+					row.LastPullUp = pullUp;
+					if (pullUp)
+					{
+						row.PullUpText.Text = "PULL-UP";
+						row.PullUpText.Foreground = BrushAmber;
+						row.PullUpBadge.Background = BrushBadgePu;
+					}
+					else
+					{
+						row.PullUpText.Text = "—";
+						row.PullUpText.Foreground = BrushDim;
+						row.PullUpBadge.Background = Brushes.Transparent;
+					}
+				}
+
+				// Keep toggle in sync for INPUT pins
 				if (!isOutput && row.Toggle.IsChecked != val)
 					row.Toggle.IsChecked = val;
+			}
+
+			// Update Port summary banners
+			byte pbVal = Interpreter.IO[0x05];
+			byte pbDdr = Interpreter.IO[0x04];
+			byte pbPin = Interpreter.IO[0x03];
+			PortBHeader.Text = $"PORT: 0x{pbVal:X2} [{ToBin8(pbVal)}]  DDR: 0x{pbDdr:X2}  PIN: 0x{pbPin:X2}";
+
+			byte pcVal = Interpreter.IO[0x08];
+			byte pcDdr = Interpreter.IO[0x07];
+			byte pcPin = Interpreter.IO[0x06];
+			PortCHeader.Text = $"PORT: 0x{pcVal:X2} [{ToBin8(pcVal)}]  DDR: 0x{pcDdr:X2}  PIN: 0x{pcPin:X2}";
+
+			byte pdVal = Interpreter.IO[0x0B];
+			byte pdDdr = Interpreter.IO[0x0A];
+			byte pdPin = Interpreter.IO[0x09];
+			PortDHeader.Text = $"PORT: 0x{pdVal:X2} [{ToBin8(pdVal)}]  DDR: 0x{pdDdr:X2}  PIN: 0x{pdPin:X2}";
+		}
+
+		private static string ToBin8(byte b) => Convert.ToString(b, 2).PadLeft(8, '0');
+
+		// ── Refresh Grouped Peripherals Dashboard ───────────────────────────
+		private void RefreshPeripherals()
+		{
+			if (Interpreter == null) return;
+			var ram = Interpreter.RAM;
+
+			// ── Timer 0 ─────────────────────────────────────────
+			byte tccr0a = ram[0x44];
+			byte tccr0b = ram[0x45];
+			byte tcnt0 = ram[0x46];
+			byte ocr0a = ram[0x47];
+			byte ocr0b = ram[0x48];
+			byte tifr0 = ram[0x35];
+			byte timsk0 = ram[0x6E];
+
+			int cs0 = tccr0b & 0x07;
+			string prescaler0 = cs0 switch
+			{
+				0 => "Clock: Stopped (Timer0 disabled)",
+				1 => "Clock: clk / 1 (No prescaling)",
+				2 => "Clock: clk / 8",
+				3 => "Clock: clk / 64",
+				4 => "Clock: clk / 256",
+				5 => "Clock: clk / 1024",
+				6 => "Clock: Ext T0 (Falling edge)",
+				7 => "Clock: Ext T0 (Rising edge)",
+				_ => "Clock: Stopped"
+			};
+
+			int wgm0 = ((tccr0b & 0x08) >> 1) | (tccr0a & 0x03);
+			string mode0 = wgm0 switch
+			{
+				0 => "Mode: Normal (Top: 0xFF)",
+				1 => "Mode: PWM, Phase Correct",
+				2 => "Mode: CTC (Top: OCR0A)",
+				3 => "Mode: Fast PWM (Top: 0xFF)",
+				5 => "Mode: PWM, Phase Correct (Top: OCR0A)",
+				7 => "Mode: Fast PWM (Top: OCR0A)",
+				_ => "Mode: Reserved"
+			};
+
+			T0_ModeText.Text = mode0;
+			T0_PrescalerText.Text = prescaler0;
+			T0_TCNTText.Text = $"0x{tcnt0:X2} ({tcnt0})";
+			T0_Bar.Value = tcnt0;
+			T0_OCRAText.Text = $"OCR0A: 0x{ocr0a:X2} ({ocr0a})";
+			T0_OCRBText.Text = $"OCR0B: 0x{ocr0b:X2} ({ocr0b})";
+			T0_TCCRAText.Text = $"TCCR0A: 0x{tccr0a:X2} [{ToBin8(tccr0a)}]";
+			T0_TCCRBText.Text = $"TCCR0B: 0x{tccr0b:X2} [{ToBin8(tccr0b)}]";
+			T0_TIFRText.Text = $"TIFR0:  0x{tifr0:X2} [TOV0: {(tifr0 & 1):X}, OCF0A: {((tifr0 >> 1) & 1):X}, OCF0B: {((tifr0 >> 2) & 1):X}]";
+			T0_TIMSKText.Text = $"TIMSK0: 0x{timsk0:X2} [TOIE0: {(timsk0 & 1):X}]";
+
+			// ── Timer 1 ─────────────────────────────────────────
+			byte tccr1a = ram[0x80];
+			byte tccr1b = ram[0x81];
+			byte tccr1c = ram[0x82];
+			ushort tcnt1 = (ushort)((ram[0x85] << 8) | ram[0x84]);
+			ushort ocr1a = (ushort)((ram[0x89] << 8) | ram[0x88]);
+			ushort ocr1b = (ushort)((ram[0x8B] << 8) | ram[0x8A]);
+			ushort icr1 = (ushort)((ram[0x87] << 8) | ram[0x86]);
+			byte tifr1 = ram[0x36];
+
+			int cs1 = tccr1b & 0x07;
+			string prescaler1 = cs1 switch
+			{
+				0 => "Clock: Stopped",
+				1 => "Clock: clk / 1",
+				2 => "Clock: clk / 8",
+				3 => "Clock: clk / 64",
+				4 => "Clock: clk / 256",
+				5 => "Clock: clk / 1024",
+				_ => "Clock: Ext T1"
+			};
+			int wgm1 = ((tccr1b & 0x18) >> 1) | (tccr1a & 0x03);
+			T1_ModeText.Text = $"Mode: WGM1={wgm1}";
+			T1_PrescalerText.Text = prescaler1;
+			T1_TCNTText.Text = $"0x{tcnt1:X4} ({tcnt1})";
+			T1_Bar.Value = Math.Min(65535, (double)tcnt1);
+			T1_OCRAText.Text = $"OCR1A: 0x{ocr1a:X4}";
+			T1_OCRBText.Text = $"OCR1B: 0x{ocr1b:X4}";
+			T1_ICRText.Text = $"ICR1:   0x{icr1:X4}";
+			T1_TCCRAText.Text = $"TCCR1A: 0x{tccr1a:X2}  TCCR1B: 0x{tccr1b:X2}";
+			T1_TCCRBText.Text = $"TCCR1C: 0x{tccr1c:X2}";
+			T1_TIFRText.Text = $"TIFR1:  0x{tifr1:X2}";
+
+			// ── Timer 2 ─────────────────────────────────────────
+			byte tccr2a = ram[0xB0];
+			byte tccr2b = ram[0xB1];
+			byte tcnt2 = ram[0xB2];
+			byte ocr2a = ram[0xB3];
+			byte ocr2b = ram[0xB4];
+			byte tifr2 = ram[0x37];
+			byte timsk2 = ram[0x70];
+
+			int cs2 = tccr2b & 0x07;
+			string prescaler2 = cs2 switch
+			{
+				0 => "Clock: Stopped",
+				1 => "Clock: clk / 1",
+				2 => "Clock: clk / 8",
+				3 => "Clock: clk / 32",
+				4 => "Clock: clk / 64",
+				5 => "Clock: clk / 128",
+				6 => "Clock: clk / 256",
+				7 => "Clock: clk / 1024",
+				_ => "Clock: Stopped"
+			};
+			T2_PrescalerText.Text = prescaler2;
+			T2_TCNTText.Text = $"0x{tcnt2:X2} ({tcnt2})";
+			T2_Bar.Value = tcnt2;
+			T2_OCRAText.Text = $"OCR2A: 0x{ocr2a:X2} ({ocr2a})";
+			T2_OCRBText.Text = $"OCR2B: 0x{ocr2b:X2} ({ocr2b})";
+			T2_TCCRAText.Text = $"TCCR2A: 0x{tccr2a:X2} [{ToBin8(tccr2a)}]";
+			T2_TCCRBText.Text = $"TCCR2B: 0x{tccr2b:X2} [{ToBin8(tccr2b)}]";
+			T2_TIFRText.Text = $"TIFR2:  0x{tifr2:X2}";
+			T2_TIMSKText.Text = $"TIMSK2: 0x{timsk2:X2}";
+
+			// ── USART ───────────────────────────────────────────
+			byte udr0 = ram[0xC6];
+			byte ucsr0a = ram[0xC0];
+			byte ucsr0b = ram[0xC1];
+			byte ucsr0c = ram[0xC2];
+			ushort ubrr0 = (ushort)((ram[0xC5] << 8) | ram[0xC4]);
+
+			bool rxen = (ucsr0b & 0x10) != 0;
+			bool txen = (ucsr0b & 0x08) != 0;
+			bool u2x = (ucsr0a & 0x02) != 0;
+			if (ubrr0 > 0)
+			{
+				long fosc = 16000000;
+				long baud = fosc / ((u2x ? 8 : 16) * (ubrr0 + 1));
+				USART_BaudText.Text = $"Baud Rate: {baud} bps (UBRR0 = {ubrr0})";
+			}
+			else
+			{
+				USART_BaudText.Text = "Baud Rate: Disabled (UBRR0 = 0)";
+			}
+
+			char ch = (udr0 >= 32 && udr0 <= 126) ? (char)udr0 : '.';
+			USART_UDRText.Text = $"UDR0 = 0x{udr0:X2} ({udr0}) '{ch}'";
+			USART_UBRRText.Text = $"UBRR0H: 0x{ram[0xC5]:X2} | UBRR0L: 0x{ram[0xC4]:X2}  (UBRR = {ubrr0})";
+			USART_UCSRAText.Text = $"0x{ucsr0a:X2} [RXC: {(ucsr0a >> 7) & 1}, TXC: {(ucsr0a >> 6) & 1}, UDRE: {(ucsr0a >> 5) & 1}, U2X: {(u2x ? 1 : 0)}]";
+			USART_UCSRBText.Text = $"0x{ucsr0b:X2} [RXEN: {(rxen ? 1 : 0)}, TXEN: {(txen ? 1 : 0)}]";
+			USART_UCSRCText.Text = $"0x{ucsr0c:X2} [Async, 8N1 default]";
+
+			// ── ADC & DAC ───────────────────────────────────────
+			byte admux = ram[0x7C];
+			byte adcsra = ram[0x7A];
+			byte adcsrb = ram[0x7B];
+			ushort rawAdc = (ushort)((ram[0x79] << 8) | ram[0x78]);
+
+			int adcChan = admux & 0x0F;
+			ADC_ChannelText.Text = $"Selected Channel: ADC{adcChan} (Pin PC{adcChan})";
+			int refs = (admux >> 6) & 0x03;
+			ADC_RefText.Text = refs switch
+			{
+				0 => "Reference: AREF (External pin)",
+				1 => "Reference: AVCC with external capacitor at AREF",
+				3 => "Reference: Internal 1.1V Voltage Reference",
+				_ => "Reference: Reserved"
+			};
+			ADC_RawText.Text = $"{rawAdc} (0x{rawAdc:X4})";
+			ADC_Bar.Value = Math.Min(1023, (int)rawAdc);
+			ADC_AdmuxText.Text = $"ADMUX:  0x{admux:X2} [{ToBin8(admux)}]";
+			ADC_AdcsraText.Text = $"ADCSRA: 0x{adcsra:X2} [ADEN: {(adcsra >> 7) & 1}, ADSC: {(adcsra >> 6) & 1}, ADIF: {(adcsra >> 4) & 1}]";
+			ADC_AdcsrbText.Text = $"ADCSRB: 0x{adcsrb:X2}";
+
+			byte dacVal = Interpreter.DACUnit?.OutputValue ?? 0;
+			DAC_Bar.Value = dacVal;
+
+			// ── SPI & TWI ───────────────────────────────────────
+			byte spcr = ram[0x4C];
+			byte spsr = ram[0x4D];
+			byte spdr = ram[0x4E];
+			bool spe = (spcr & 0x40) != 0;
+			bool mstr = (spcr & 0x10) != 0;
+			SPI_StatusText.Text = spe ? $"Status: Enabled ({(mstr ? "Master" : "Slave")})" : "Status: Disabled (SPE = 0)";
+			SPI_SpcrText.Text = $"SPCR: 0x{spcr:X2} [SPE: {(spe ? 1 : 0)}, MSTR: {(mstr ? 1 : 0)}]";
+			SPI_SpsrText.Text = $"SPSR: 0x{spsr:X2} [SPIF: {(spsr >> 7) & 1}, 2X: {spsr & 1}]";
+			SPI_SpdrText.Text = $"SPDR: 0x{spdr:X2} ({spdr})";
+
+			byte twbr = ram[0xB8];
+			byte twsr = ram[0xB9];
+			byte twcr = ram[0xBC];
+			bool twen = (twcr & 0x04) != 0;
+			TWI_StatusText.Text = twen ? "Status: Enabled (TWEN = 1)" : "Status: Disabled (TWEN = 0)";
+			TWI_TwbrText.Text = $"TWBR: 0x{twbr:X2} ({twbr})";
+			TWI_TwsrText.Text = $"TWSR: 0x{twsr:X2} [Status: 0x{twsr & 0xF8:X2}]";
+			TWI_TwcrText.Text = $"TWCR: 0x{twcr:X2} [TWINT: {(twcr >> 7) & 1}, TWEN: {(twen ? 1 : 0)}]";
+
+			// ── Core & SREG ─────────────────────────────────────
+			byte sreg = ram[0x5F];
+			SREG_HexText.Text = $"SREG: 0x{sreg:X2} [{ToBin8(sreg)}]";
+			UpdateFlagBadge(SREG_I, (sreg & 0x80) != 0, "I");
+			UpdateFlagBadge(SREG_T, (sreg & 0x40) != 0, "T");
+			UpdateFlagBadge(SREG_H, (sreg & 0x20) != 0, "H");
+			UpdateFlagBadge(SREG_S, (sreg & 0x10) != 0, "S");
+			UpdateFlagBadge(SREG_V, (sreg & 0x08) != 0, "V");
+			UpdateFlagBadge(SREG_N, (sreg & 0x04) != 0, "N");
+			UpdateFlagBadge(SREG_Z, (sreg & 0x02) != 0, "Z");
+			UpdateFlagBadge(SREG_C, (sreg & 0x01) != 0, "C");
+
+			ushort sp = (ushort)((ram[0x5E] << 8) | ram[0x5D]);
+			SP_Text.Text = $"SP = 0x{sp:X4} (SPL: 0x{ram[0x5D]:X2}, SPH: 0x{ram[0x5E]:X2})";
+
+			byte eecr = ram[0x3F];
+			byte eedr = ram[0x40];
+			ushort eear = (ushort)((ram[0x42] << 8) | ram[0x41]);
+			EEPROM_Text.Text = $"EECR: 0x{eecr:X2}  |  EEDR: 0x{eedr:X2}  |  EEAR: 0x{eear:X4}";
+		}
+
+		private static void UpdateFlagBadge(Border badge, bool isSet, string name)
+		{
+			badge.Background = isSet ? BrushHigh : BrushDark;
+			if (badge.Child is TextBlock tb)
+			{
+				tb.Foreground = isSet ? new SolidColorBrush(Color.FromRgb(0x18, 0x18, 0x25)) : BrushDim;
+				tb.FontWeight = isSet ? FontWeights.Bold : FontWeights.Normal;
+				tb.Text = $"{name}: {(isSet ? 1 : 0)}";
 			}
 		}
 	}

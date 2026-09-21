@@ -1,7 +1,8 @@
 <Window x:Class="AVR_Simulator.MainWindow"
 		xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		Title="AVR Simulator" Height="760" Width="900"
+		Title="AVR Simulator" Height="860" Width="1120"
+		MinHeight="680" MinWidth="960"
 		Loaded="Window_Loaded" Closing="Window_Closing"
 		Background="#1E1E2E">
 
@@ -15,12 +16,19 @@
 			<Setter Property="Margin" Value="0,0,0,6"/>
 		</Style>
 
+		<Style x:Key="SubSectionHeader" TargetType="TextBlock">
+			<Setter Property="Foreground" Value="#BAC2DE"/>
+			<Setter Property="FontSize" Value="11"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="FontFamily" Value="Segoe UI"/>
+			<Setter Property="Margin" Value="0,0,0,4"/>
+		</Style>
+
 		<!-- Port label (compact) -->
 		<Style x:Key="PinLabel" TargetType="TextBlock">
 			<Setter Property="Foreground" Value="#BAC2DE"/>
 			<Setter Property="FontFamily" Value="Consolas"/>
-			<Setter Property="FontSize" Value="10"/>
-			<Setter Property="Width" Value="30"/>
+			<Setter Property="FontSize" Value="11"/>
 			<Setter Property="VerticalAlignment" Value="Center"/>
 		</Style>
 
@@ -30,6 +38,51 @@
 			<Setter Property="CornerRadius" Value="8"/>
 			<Setter Property="Padding" Value="12,8"/>
 			<Setter Property="Margin" Value="0,0,0,8"/>
+		</Style>
+
+		<Style x:Key="SubCard" TargetType="Border">
+			<Setter Property="Background" Value="#1E1E2E"/>
+			<Setter Property="CornerRadius" Value="6"/>
+			<Setter Property="BorderBrush" Value="#45475A"/>
+			<Setter Property="BorderThickness" Value="1"/>
+			<Setter Property="Padding" Value="10,8"/>
+			<Setter Property="Margin" Value="0,0,0,6"/>
+		</Style>
+
+		<!-- Modern TabControl -->
+		<Style TargetType="TabControl">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+		</Style>
+
+		<Style TargetType="TabItem">
+			<Setter Property="Background" Value="#181825"/>
+			<Setter Property="Foreground" Value="#A6ADC8"/>
+			<Setter Property="FontFamily" Value="Segoe UI"/>
+			<Setter Property="FontSize" Value="12"/>
+			<Setter Property="FontWeight" Value="SemiBold"/>
+			<Setter Property="Padding" Value="14,7"/>
+			<Setter Property="Margin" Value="0,0,3,0"/>
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="TabItem">
+						<Border Name="TabBorder" Background="{TemplateBinding Background}"
+						        CornerRadius="6,6,0,0" Padding="{TemplateBinding Padding}"
+						        BorderBrush="#45475A" BorderThickness="1,1,1,0" Margin="{TemplateBinding Margin}">
+							<ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+						</Border>
+						<ControlTemplate.Triggers>
+							<Trigger Property="IsSelected" Value="True">
+								<Setter TargetName="TabBorder" Property="Background" Value="#313244"/>
+								<Setter Property="Foreground" Value="#CDD6F4"/>
+							</Trigger>
+							<Trigger Property="IsMouseOver" Value="True">
+								<Setter Property="Foreground" Value="#FFFFFF"/>
+							</Trigger>
+						</ControlTemplate.Triggers>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
 		</Style>
 
 		<!-- Menu bar style -->
@@ -136,7 +189,7 @@
 		</StatusBar>
 
 		<ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-		<StackPanel Margin="14">
+		<StackPanel Margin="12">
 
 			<!-- ── Code / HEX ────────────────────────────── -->
 			<Border Style="{StaticResource Card}">
@@ -191,7 +244,7 @@
 							<TextBlock Text="Disassembly" Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="11" Margin="0,0,0,4"/>
 							<ListBox x:Name="DisassemblyList"
 							         Grid.Row="1"
-							         Height="220"
+							         Height="190"
 							         Background="#1E1E2E"
 							         BorderBrush="#45475A"
 							         BorderThickness="1"
@@ -227,7 +280,7 @@
 							<TextBlock Text="HEX Bytes" Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="11" Margin="0,0,0,4"/>
 							<ListBox x:Name="HexList"
 							         Grid.Row="1"
-							         Height="220"
+							         Height="190"
 							         Background="#1E1E2E"
 							         BorderBrush="#45475A"
 							         BorderThickness="1"
@@ -277,107 +330,432 @@
 				</Grid>
 			</Border>
 
-			<!-- ── ADC Control ───────────────────────────── -->
-			<Border Style="{StaticResource Card}">
-				<StackPanel>
-					<TextBlock Text="🎛  ADC Control" Style="{StaticResource SectionHeader}"/>
+			<!-- ── Peripherals Dashboard (Grouped by Peripheral) ── -->
+			<TabControl Margin="0,4,0,0">
 
-					<TextBlock Text="Manual Voltage (0–5 V):" Foreground="#BAC2DE" FontSize="11" FontFamily="Segoe UI"/>
-					<DockPanel Margin="0,4,0,0">
-						<TextBlock Text="{Binding ElementName=VoltageSlider, Path=Value, StringFormat={}{0:F2} V}"
-								   Width="52" DockPanel.Dock="Right" VerticalAlignment="Center"
-								   Foreground="#CDD6F4" FontFamily="Consolas" FontSize="11" Margin="6,0,0,0"/>
-						<Slider Name="VoltageSlider" Minimum="0" Maximum="5" Value="0"
-								TickFrequency="0.1" IsSnapToTickEnabled="False"/>
-					</DockPanel>
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<!-- TAB 1: GPIO & Alternate Functions                              -->
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<TabItem Header="🔌  GPIO Ports &amp; Alternate Functions">
+					<Border Style="{StaticResource Card}" Margin="0">
+						<StackPanel>
+							<!-- Legend -->
+							<DockPanel Margin="0,0,0,8">
+								<StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+									<Ellipse Width="8" Height="8" Fill="#A6E3A1" VerticalAlignment="Center" Margin="0,0,4,0"/>
+									<TextBlock Text="HIGH (OUT)" Foreground="#A6E3A1" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
-					<CheckBox Name="SineWaveCheckBox" Content="Enable Sine Wave Mode"
-							  Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="11" Margin="0,8,0,0"/>
+									<Ellipse Width="8" Height="8" Fill="#89B4FA" VerticalAlignment="Center" Margin="0,0,4,0"/>
+									<TextBlock Text="HIGH (IN)" Foreground="#89B4FA" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center" Margin="0,0,10,0"/>
 
-					<StackPanel IsEnabled="{Binding ElementName=SineWaveCheckBox, Path=IsChecked}" Margin="0,4,0,0">
-						<TextBlock Text="Frequency (Hz):" Foreground="#BAC2DE" FontSize="11" FontFamily="Segoe UI"/>
-						<DockPanel Margin="0,4,0,0">
-							<TextBlock Text="{Binding ElementName=FreqSlider, Path=Value, StringFormat={}{0:F1} Hz}"
-									   Width="52" DockPanel.Dock="Right" VerticalAlignment="Center"
-									   Foreground="#CDD6F4" FontFamily="Consolas" FontSize="11" Margin="6,0,0,0"/>
-							<Slider Name="FreqSlider" Minimum="0.1" Maximum="10" Value="1"
-									TickFrequency="0.1" IsSnapToTickEnabled="False"/>
-						</DockPanel>
-						<TextBlock Text="Amplitude (V):" Foreground="#BAC2DE" FontSize="11" FontFamily="Segoe UI" Margin="0,4,0,0"/>
-						<DockPanel Margin="0,4,0,0">
-							<TextBlock Text="{Binding ElementName=AmpSlider, Path=Value, StringFormat={}{0:F1} V}"
-									   Width="52" DockPanel.Dock="Right" VerticalAlignment="Center"
-									   Foreground="#CDD6F4" FontFamily="Consolas" FontSize="11" Margin="6,0,0,0"/>
-							<Slider Name="AmpSlider" Minimum="0" Maximum="2.5" Value="2.5"
-									TickFrequency="0.1" IsSnapToTickEnabled="False"/>
-						</DockPanel>
-					</StackPanel>
+									<Ellipse Width="8" Height="8" Fill="#45475A" VerticalAlignment="Center" Margin="0,0,4,0"/>
+									<TextBlock Text="LOW" Foreground="#6C7086" FontSize="10" FontFamily="Consolas" VerticalAlignment="Center" Margin="0,0,12,0"/>
 
-					<TextBlock Name="CurrentValueText" Text="Current ADC Input: 0.00 V"
-							   Foreground="#89DCEB" FontFamily="Consolas" FontSize="11" Margin="0,8,0,0"/>
-				</StackPanel>
-			</Border>
+									<TextBlock Text="● OUT (DDR=1)  ○ IN (Click to toggle input)" Foreground="#BAC2DE" FontSize="10" FontFamily="Segoe UI" VerticalAlignment="Center"/>
+								</StackPanel>
+								<TextBlock Text="Official ATmega328P Datasheet Mapping" Foreground="#6C7086" FontSize="10" FontFamily="Segoe UI" HorizontalAlignment="Right" VerticalAlignment="Center"/>
+							</DockPanel>
 
-			<!-- ── DAC Output ────────────────────────────── -->
-			<Border Style="{StaticResource Card}">
-				<StackPanel>
-					<TextBlock Text="📤  Virtual DAC Output" Style="{StaticResource SectionHeader}"/>
-					<TextBlock Name="DACOutputText" Text="DAC Voltage: 0.00 V (0x00)"
-							   Foreground="#A6E3A1" FontFamily="Consolas" FontSize="11"/>
-				</StackPanel>
-			</Border>
+							<!-- 3 Column Port Grid -->
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="8"/>
+									<ColumnDefinition Width="*"/>
+									<ColumnDefinition Width="8"/>
+									<ColumnDefinition Width="*"/>
+								</Grid.ColumnDefinitions>
 
-			<!-- ── GPIO Ports (3 columns, compact) ────────── -->
-			<Border Style="{StaticResource Card}">
-				<StackPanel>
-					<TextBlock Text="🔌  GPIO Ports" Style="{StaticResource SectionHeader}"/>
+								<!-- PORT B -->
+								<Border Grid.Column="0" Background="#24273A" CornerRadius="6" Padding="8">
+									<StackPanel>
+										<TextBlock Text="PORT B (PB0..PB7)" Foreground="#CBA6F7" FontFamily="Segoe UI" FontSize="12" FontWeight="Bold"/>
+										<TextBlock Name="PortBHeader" Text="PORT: 0x00 | DDR: 0x00 | PIN: 0x00" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,6"/>
+										<ItemsControl Name="PortBPanel"/>
+									</StackPanel>
+								</Border>
 
-					<!-- Legend -->
-					<StackPanel Orientation="Horizontal" Margin="0,0,0,6">
-						<Ellipse Width="8" Height="8" Fill="#A6E3A1" VerticalAlignment="Center" Margin="0,0,4,0"/>
-						<TextBlock Text="HIGH" Foreground="#6C7086" FontSize="9" FontFamily="Consolas" VerticalAlignment="Center" Margin="0,0,10,0"/>
-						<Ellipse Width="8" Height="8" Fill="#45475A" VerticalAlignment="Center" Margin="0,0,4,0"/>
-						<TextBlock Text="LOW" Foreground="#6C7086" FontSize="9" FontFamily="Consolas" VerticalAlignment="Center" Margin="0,0,10,0"/>
-						<TextBlock Text="●=OUT  ○=IN(click to toggle)" Foreground="#585B70" FontSize="9" FontFamily="Consolas" VerticalAlignment="Center"/>
-					</StackPanel>
+								<Rectangle Grid.Column="1" Fill="#313244" Width="1"/>
 
-					<!-- Three port columns side-by-side -->
-					<Grid>
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="*"/>
-							<ColumnDefinition Width="8"/>
-							<ColumnDefinition Width="*"/>
-							<ColumnDefinition Width="8"/>
-							<ColumnDefinition Width="*"/>
-						</Grid.ColumnDefinitions>
+								<!-- PORT C -->
+								<Border Grid.Column="2" Background="#24273A" CornerRadius="6" Padding="8">
+									<StackPanel>
+										<TextBlock Text="PORT C (PC0..PC6)" Foreground="#89B4FA" FontFamily="Segoe UI" FontSize="12" FontWeight="Bold"/>
+										<TextBlock Name="PortCHeader" Text="PORT: 0x00 | DDR: 0x00 | PIN: 0x00" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,6"/>
+										<ItemsControl Name="PortCPanel"/>
+									</StackPanel>
+								</Border>
 
-						<!-- PORTB -->
-						<StackPanel Grid.Column="0">
-							<TextBlock Text="PORTB" Foreground="#CBA6F7" FontFamily="Consolas"
-							           FontSize="10" FontWeight="Bold" Margin="0,0,0,3"/>
-							<ItemsControl Name="PortBPanel"/>
+								<Rectangle Grid.Column="3" Fill="#313244" Width="1"/>
+
+								<!-- PORT D -->
+								<Border Grid.Column="4" Background="#24273A" CornerRadius="6" Padding="8">
+									<StackPanel>
+										<TextBlock Text="PORT D (PD0..PD7)" Foreground="#F38BA8" FontFamily="Segoe UI" FontSize="12" FontWeight="Bold"/>
+										<TextBlock Name="PortDHeader" Text="PORT: 0x00 | DDR: 0x00 | PIN: 0x00" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,6"/>
+										<ItemsControl Name="PortDPanel"/>
+									</StackPanel>
+								</Border>
+							</Grid>
 						</StackPanel>
+					</Border>
+				</TabItem>
 
-						<Rectangle Grid.Column="1" Fill="#45475A" Width="1"/>
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<!-- TAB 2: Timers (Timer0, Timer1, Timer2)                         -->
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<TabItem Header="⏱️  Timers">
+					<Border Style="{StaticResource Card}" Margin="0">
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="8"/>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="8"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
 
-						<!-- PORTC -->
-						<StackPanel Grid.Column="2">
-							<TextBlock Text="PORTC" Foreground="#89B4FA" FontFamily="Consolas"
-							           FontSize="10" FontWeight="Bold" Margin="0,0,0,3"/>
-							<ItemsControl Name="PortCPanel"/>
-						</StackPanel>
+							<!-- Timer 0 -->
+							<Border Grid.Column="0" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="Timer/Counter 0 (8-bit)" Foreground="#F9E2AF" FontSize="12" FontWeight="Bold"/>
+									<TextBlock Name="T0_ModeText" Text="Mode: Normal" Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="10" Margin="0,2,0,1"/>
+									<TextBlock Name="T0_PrescalerText" Text="Clock: Stopped" Foreground="#89DCEB" FontFamily="Segoe UI" FontSize="10" Margin="0,0,0,6"/>
 
-						<Rectangle Grid.Column="3" Fill="#45475A" Width="1"/>
+									<!-- TCNT0 Meter -->
+									<TextBlock Text="Counter (TCNT0):" Foreground="#CDD6F4" FontFamily="Segoe UI" FontSize="10"/>
+									<DockPanel Margin="0,2,0,6">
+										<TextBlock Name="T0_TCNTText" Text="0x00 (0)" Width="65" DockPanel.Dock="Right" FontFamily="Consolas" FontSize="11" Foreground="#A6E3A1" HorizontalAlignment="Right"/>
+										<ProgressBar Name="T0_Bar" Minimum="0" Maximum="255" Value="0" Height="10" Foreground="#A6E3A1" Background="#181825"/>
+									</DockPanel>
 
-						<!-- PORTD -->
-						<StackPanel Grid.Column="4">
-							<TextBlock Text="PORTD" Foreground="#F38BA8" FontFamily="Consolas"
-							           FontSize="10" FontWeight="Bold" Margin="0,0,0,3"/>
-							<ItemsControl Name="PortDPanel"/>
-						</StackPanel>
-					</Grid>
-				</StackPanel>
-			</Border>
+									<Grid Margin="0,2">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="*"/>
+											<ColumnDefinition Width="*"/>
+										</Grid.ColumnDefinitions>
+										<TextBlock Name="T0_OCRAText" Grid.Column="0" Text="OCR0A: 0x00" Foreground="#CDD6F4" FontFamily="Consolas" FontSize="10"/>
+										<TextBlock Name="T0_OCRBText" Grid.Column="1" Text="OCR0B: 0x00" Foreground="#CDD6F4" FontFamily="Consolas" FontSize="10"/>
+									</Grid>
+
+									<TextBlock Name="T0_TCCRAText" Text="TCCR0A: 0x00 [00000000]" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+									<TextBlock Name="T0_TCCRBText" Text="TCCR0B: 0x00 [00000000]" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+									<TextBlock Name="T0_TIFRText" Text="TIFR0:  0x00 (TOV0: 0)" Foreground="#6C7086" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+									<TextBlock Name="T0_TIMSKText" Text="TIMSK0: 0x00" Foreground="#6C7086" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+								</StackPanel>
+							</Border>
+
+							<Rectangle Grid.Column="1" Fill="#313244" Width="1"/>
+
+							<!-- Timer 1 -->
+							<Border Grid.Column="2" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="Timer/Counter 1 (16-bit)" Foreground="#89B4FA" FontSize="12" FontWeight="Bold"/>
+									<TextBlock Name="T1_ModeText" Text="Mode: Normal" Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="10" Margin="0,2,0,1"/>
+									<TextBlock Name="T1_PrescalerText" Text="Clock: Stopped" Foreground="#89DCEB" FontFamily="Segoe UI" FontSize="10" Margin="0,0,0,6"/>
+
+									<!-- TCNT1 Meter -->
+									<TextBlock Text="Counter (TCNT1):" Foreground="#CDD6F4" FontFamily="Segoe UI" FontSize="10"/>
+									<DockPanel Margin="0,2,0,6">
+										<TextBlock Name="T1_TCNTText" Text="0x0000 (0)" Width="85" DockPanel.Dock="Right" FontFamily="Consolas" FontSize="11" Foreground="#89B4FA" HorizontalAlignment="Right"/>
+										<ProgressBar Name="T1_Bar" Minimum="0" Maximum="65535" Value="0" Height="10" Foreground="#89B4FA" Background="#181825"/>
+									</DockPanel>
+
+									<Grid Margin="0,2">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="*"/>
+											<ColumnDefinition Width="*"/>
+										</Grid.ColumnDefinitions>
+										<TextBlock Name="T1_OCRAText" Grid.Column="0" Text="OCR1A: 0x0000" Foreground="#CDD6F4" FontFamily="Consolas" FontSize="10"/>
+										<TextBlock Name="T1_OCRBText" Grid.Column="1" Text="OCR1B: 0x0000" Foreground="#CDD6F4" FontFamily="Consolas" FontSize="10"/>
+									</Grid>
+
+									<TextBlock Name="T1_ICRText" Text="ICR1:   0x0000" Foreground="#CDD6F4" FontFamily="Consolas" FontSize="10" Margin="0,1,0,0"/>
+									<TextBlock Name="T1_TCCRAText" Text="TCCR1A: 0x00" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+									<TextBlock Name="T1_TCCRBText" Text="TCCR1B: 0x00" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+									<TextBlock Name="T1_TIFRText" Text="TIFR1:  0x00" Foreground="#6C7086" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+								</StackPanel>
+							</Border>
+
+							<Rectangle Grid.Column="3" Fill="#313244" Width="1"/>
+
+							<!-- Timer 2 -->
+							<Border Grid.Column="4" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="Timer/Counter 2 (8-bit Async)" Foreground="#CBA6F7" FontSize="12" FontWeight="Bold"/>
+									<TextBlock Name="T2_ModeText" Text="Mode: Normal" Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="10" Margin="0,2,0,1"/>
+									<TextBlock Name="T2_PrescalerText" Text="Clock: Stopped" Foreground="#89DCEB" FontFamily="Segoe UI" FontSize="10" Margin="0,0,0,6"/>
+
+									<!-- TCNT2 Meter -->
+									<TextBlock Text="Counter (TCNT2):" Foreground="#CDD6F4" FontFamily="Segoe UI" FontSize="10"/>
+									<DockPanel Margin="0,2,0,6">
+										<TextBlock Name="T2_TCNTText" Text="0x00 (0)" Width="65" DockPanel.Dock="Right" FontFamily="Consolas" FontSize="11" Foreground="#CBA6F7" HorizontalAlignment="Right"/>
+										<ProgressBar Name="T2_Bar" Minimum="0" Maximum="255" Value="0" Height="10" Foreground="#CBA6F7" Background="#181825"/>
+									</DockPanel>
+
+									<Grid Margin="0,2">
+										<Grid.ColumnDefinitions>
+											<ColumnDefinition Width="*"/>
+											<ColumnDefinition Width="*"/>
+										</Grid.ColumnDefinitions>
+										<TextBlock Name="T2_OCRAText" Grid.Column="0" Text="OCR2A: 0x00" Foreground="#CDD6F4" FontFamily="Consolas" FontSize="10"/>
+										<TextBlock Name="T2_OCRBText" Grid.Column="1" Text="OCR2B: 0x00" Foreground="#CDD6F4" FontFamily="Consolas" FontSize="10"/>
+									</Grid>
+
+									<TextBlock Name="T2_TCCRAText" Text="TCCR2A: 0x00 [00000000]" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+									<TextBlock Name="T2_TCCRBText" Text="TCCR2B: 0x00 [00000000]" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+									<TextBlock Name="T2_TIFRText" Text="TIFR2:  0x00" Foreground="#6C7086" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+									<TextBlock Name="T2_TIMSKText" Text="TIMSK2: 0x00" Foreground="#6C7086" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+								</StackPanel>
+							</Border>
+						</Grid>
+					</Border>
+				</TabItem>
+
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<!-- TAB 3: USART (Serial)                                          -->
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<TabItem Header="📡  USART / UART">
+					<Border Style="{StaticResource Card}" Margin="0">
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="8"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
+
+							<!-- Left: Config & Baud -->
+							<Border Grid.Column="0" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="Serial Configuration" Style="{StaticResource SubSectionHeader}"/>
+									<TextBlock Name="USART_BaudText" Text="Baud Rate: Disabled (UBRR0 = 0)" Foreground="#A6E3A1" FontFamily="Segoe UI" FontSize="12" FontWeight="Bold" Margin="0,2,0,2"/>
+									<TextBlock Name="USART_FormatText" Text="Frame: 8 Data Bits, No Parity, 1 Stop Bit" Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="11" Margin="0,0,0,8"/>
+
+									<TextBlock Text="Data Register (UDR0):" Foreground="#CDD6F4" FontFamily="Segoe UI" FontSize="10"/>
+									<TextBlock Name="USART_UDRText" Text="UDR0 = 0x00 (ASCII: NUL)" Foreground="#89DCEB" FontFamily="Consolas" FontSize="12" FontWeight="Bold" Margin="0,2,0,8"/>
+
+									<TextBlock Text="Baud Rate Registers:" Foreground="#CDD6F4" FontFamily="Segoe UI" FontSize="10"/>
+									<TextBlock Name="USART_UBRRText" Text="UBRR0H: 0x00  |  UBRR0L: 0x00  (UBRR = 0)" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="11" Margin="0,2,0,4"/>
+								</StackPanel>
+							</Border>
+
+							<Rectangle Grid.Column="1" Fill="#313244" Width="1"/>
+
+							<!-- Right: Status Flags & Control -->
+							<Border Grid.Column="2" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="Status &amp; Control Flags" Style="{StaticResource SubSectionHeader}"/>
+
+									<TextBlock Text="UCSR0A (Status A):" Foreground="#CDD6F4" FontFamily="Segoe UI" FontSize="10"/>
+									<TextBlock Name="USART_UCSRAText" Text="0x20 [UDRE0=1, TXC0=0, RXC0=0]" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="11" Margin="0,2,0,6"/>
+
+									<TextBlock Text="UCSR0B (Control B):" Foreground="#CDD6F4" FontFamily="Segoe UI" FontSize="10"/>
+									<TextBlock Name="USART_UCSRBText" Text="0x00 [RXEN=0, TXEN=0, UCSZ2=0]" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="11" Margin="0,2,0,6"/>
+
+									<TextBlock Text="UCSR0C (Control C):" Foreground="#CDD6F4" FontFamily="Segoe UI" FontSize="10"/>
+									<TextBlock Name="USART_UCSRCText" Text="0x06 [Async, 8-bit, 1 Stop]" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="11" Margin="0,2,0,6"/>
+								</StackPanel>
+							</Border>
+						</Grid>
+					</Border>
+				</TabItem>
+
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<!-- TAB 4: ADC & Virtual DAC                                       -->
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<TabItem Header="🎛️  ADC &amp; Virtual DAC">
+					<Border Style="{StaticResource Card}" Margin="0">
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="8"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
+
+							<!-- Left: ADC Simulator Control -->
+							<Border Grid.Column="0" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="Analog-to-Digital Converter Input" Style="{StaticResource SubSectionHeader}"/>
+
+									<TextBlock Text="Manual Voltage (0–5 V):" Foreground="#BAC2DE" FontSize="11" FontFamily="Segoe UI"/>
+									<DockPanel Margin="0,4,0,0">
+										<TextBlock Text="{Binding ElementName=VoltageSlider, Path=Value, StringFormat={}{0:F2} V}"
+										           Width="52" DockPanel.Dock="Right" VerticalAlignment="Center"
+										           Foreground="#CDD6F4" FontFamily="Consolas" FontSize="11" Margin="6,0,0,0"/>
+										<Slider Name="VoltageSlider" Minimum="0" Maximum="5" Value="0"
+										        TickFrequency="0.1" IsSnapToTickEnabled="False"/>
+									</DockPanel>
+
+									<CheckBox Name="SineWaveCheckBox" Content="Enable Sine Wave Mode"
+									          Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="11" Margin="0,8,0,0"/>
+
+									<StackPanel IsEnabled="{Binding ElementName=SineWaveCheckBox, Path=IsChecked}" Margin="0,4,0,0">
+										<TextBlock Text="Frequency (Hz):" Foreground="#BAC2DE" FontSize="11" FontFamily="Segoe UI"/>
+										<DockPanel Margin="0,4,0,0">
+											<TextBlock Text="{Binding ElementName=FreqSlider, Path=Value, StringFormat={}{0:F1} Hz}"
+											           Width="52" DockPanel.Dock="Right" VerticalAlignment="Center"
+											           Foreground="#CDD6F4" FontFamily="Consolas" FontSize="11" Margin="6,0,0,0"/>
+											<Slider Name="FreqSlider" Minimum="0.1" Maximum="10" Value="1"
+											        TickFrequency="0.1" IsSnapToTickEnabled="False"/>
+										</DockPanel>
+										<TextBlock Text="Amplitude (V):" Foreground="#BAC2DE" FontSize="11" FontFamily="Segoe UI" Margin="0,4,0,0"/>
+										<DockPanel Margin="0,4,0,0">
+											<TextBlock Text="{Binding ElementName=AmpSlider, Path=Value, StringFormat={}{0:F1} V}"
+											           Width="52" DockPanel.Dock="Right" VerticalAlignment="Center"
+											           Foreground="#CDD6F4" FontFamily="Consolas" FontSize="11" Margin="6,0,0,0"/>
+											<Slider Name="AmpSlider" Minimum="0" Maximum="2.5" Value="2.5"
+											        TickFrequency="0.1" IsSnapToTickEnabled="False"/>
+										</DockPanel>
+									</StackPanel>
+
+									<TextBlock Name="CurrentValueText" Text="Current ADC Input: 0.00 V"
+									           Foreground="#89DCEB" FontFamily="Consolas" FontSize="11" Margin="0,8,0,0"/>
+								</StackPanel>
+							</Border>
+
+							<Rectangle Grid.Column="1" Fill="#313244" Width="1"/>
+
+							<!-- Right: Hardware Registers & DAC -->
+							<Border Grid.Column="2" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="ADC Hardware Registers &amp; Output" Style="{StaticResource SubSectionHeader}"/>
+
+									<TextBlock Name="ADC_ChannelText" Text="Channel: ADC0 (Pin PC0)" Foreground="#F9E2AF" FontFamily="Segoe UI" FontSize="11" Margin="0,1,0,2"/>
+									<TextBlock Name="ADC_RefText" Text="Reference: AREF" Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="10" Margin="0,0,0,4"/>
+
+									<TextBlock Text="10-bit Converted Result:" Foreground="#CDD6F4" FontFamily="Segoe UI" FontSize="10"/>
+									<DockPanel Margin="0,2,0,6">
+										<TextBlock Name="ADC_RawText" Text="0 (0x0000)" Width="80" DockPanel.Dock="Right" FontFamily="Consolas" FontSize="11" Foreground="#A6E3A1" HorizontalAlignment="Right"/>
+										<ProgressBar Name="ADC_Bar" Minimum="0" Maximum="1023" Value="0" Height="10" Foreground="#A6E3A1" Background="#181825"/>
+									</DockPanel>
+
+									<TextBlock Name="ADC_AdmuxText" Text="ADMUX:  0x00" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10"/>
+									<TextBlock Name="ADC_AdcsraText" Text="ADCSRA: 0x00 (ADEN=0, ADSC=0)" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,0"/>
+									<TextBlock Name="ADC_AdcsrbText" Text="ADCSRB: 0x00" Foreground="#6C7086" FontFamily="Consolas" FontSize="10" Margin="0,2,0,8"/>
+
+									<Separator Background="#45475A" Margin="0,4,0,6"/>
+
+									<!-- Virtual DAC -->
+									<TextBlock Text="Virtual DAC Output (RAM[0xFE])" Style="{StaticResource SubSectionHeader}"/>
+									<TextBlock Name="DACOutputText" Text="DAC Voltage: 0.00 V (0x00)" Foreground="#A6E3A1" FontFamily="Consolas" FontSize="11" Margin="0,2,0,4"/>
+									<ProgressBar Name="DAC_Bar" Minimum="0" Maximum="255" Value="0" Height="8" Foreground="#A6E3A1" Background="#181825"/>
+								</StackPanel>
+							</Border>
+						</Grid>
+					</Border>
+				</TabItem>
+
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<!-- TAB 5: SPI & TWI (I2C)                                         -->
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<TabItem Header="🔄  SPI &amp; TWI (I2C)">
+					<Border Style="{StaticResource Card}" Margin="0">
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="8"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
+
+							<!-- SPI -->
+							<Border Grid.Column="0" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="SPI (Serial Peripheral Interface)" Style="{StaticResource SubSectionHeader}"/>
+									<TextBlock Name="SPI_StatusText" Text="Status: Disabled (SPE = 0)" Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="11" Margin="0,2,0,6"/>
+
+									<TextBlock Name="SPI_SpcrText" Text="SPCR: 0x00 [SPIE=0, SPE=0, MSTR=0]" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,2"/>
+									<TextBlock Name="SPI_SpsrText" Text="SPSR: 0x00 [SPIF=0, WCOL=0, 2X=0]" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,2"/>
+									<TextBlock Name="SPI_SpdrText" Text="SPDR: 0x00 (Data Buffer)" Foreground="#89DCEB" FontFamily="Consolas" FontSize="10" Margin="0,2,0,2"/>
+
+									<TextBlock Text="SPI Pins on ATmega328P: PB2(SS), PB3(MOSI), PB4(MISO), PB5(SCK)" Foreground="#6C7086" FontSize="10" FontFamily="Segoe UI" Margin="0,8,0,0"/>
+								</StackPanel>
+							</Border>
+
+							<Rectangle Grid.Column="1" Fill="#313244" Width="1"/>
+
+							<!-- TWI / I2C -->
+							<Border Grid.Column="2" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="TWI (I2C 2-Wire Serial Bus)" Style="{StaticResource SubSectionHeader}"/>
+									<TextBlock Name="TWI_StatusText" Text="Status: Disabled (TWEN = 0)" Foreground="#BAC2DE" FontFamily="Segoe UI" FontSize="11" Margin="0,2,0,6"/>
+
+									<TextBlock Name="TWI_TwbrText" Text="TWBR: 0x00 (Bit Rate Generator)" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,2"/>
+									<TextBlock Name="TWI_TwsrText" Text="TWSR: 0x00 (Status: No relevant state)" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,2"/>
+									<TextBlock Name="TWI_TwcrText" Text="TWCR: 0x00 [TWINT=0, TWEN=0]" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="10" Margin="0,2,0,2"/>
+
+									<TextBlock Text="I2C Pins on ATmega328P: PC4(SDA), PC5(SCL)" Foreground="#6C7086" FontSize="10" FontFamily="Segoe UI" Margin="0,8,0,0"/>
+								</StackPanel>
+							</Border>
+						</Grid>
+					</Border>
+				</TabItem>
+
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<!-- TAB 6: Core & EEPROM                                           -->
+				<!-- ══════════════════════════════════════════════════════════════ -->
+				<TabItem Header="💾  Core &amp; EEPROM">
+					<Border Style="{StaticResource Card}" Margin="0">
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="8"/>
+								<ColumnDefinition Width="*"/>
+							</Grid.ColumnDefinitions>
+
+							<!-- SREG Flags & Stack Pointer -->
+							<Border Grid.Column="0" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="CPU Status Register (SREG)" Style="{StaticResource SubSectionHeader}"/>
+									<TextBlock Name="SREG_HexText" Text="SREG: 0x00" Foreground="#CDD6F4" FontFamily="Consolas" FontSize="11" Margin="0,2,0,6"/>
+
+									<!-- SREG 8 Bit Flag Display -->
+									<WrapPanel Margin="0,2,0,8">
+										<Border Name="SREG_I" Background="#181825" CornerRadius="4" Padding="6,3" Margin="2">
+											<TextBlock Text="I: 0" FontFamily="Consolas" FontSize="11" Foreground="#BAC2DE"/>
+										</Border>
+										<Border Name="SREG_T" Background="#181825" CornerRadius="4" Padding="6,3" Margin="2">
+											<TextBlock Text="T: 0" FontFamily="Consolas" FontSize="11" Foreground="#BAC2DE"/>
+										</Border>
+										<Border Name="SREG_H" Background="#181825" CornerRadius="4" Padding="6,3" Margin="2">
+											<TextBlock Text="H: 0" FontFamily="Consolas" FontSize="11" Foreground="#BAC2DE"/>
+										</Border>
+										<Border Name="SREG_S" Background="#181825" CornerRadius="4" Padding="6,3" Margin="2">
+											<TextBlock Text="S: 0" FontFamily="Consolas" FontSize="11" Foreground="#BAC2DE"/>
+										</Border>
+										<Border Name="SREG_V" Background="#181825" CornerRadius="4" Padding="6,3" Margin="2">
+											<TextBlock Text="V: 0" FontFamily="Consolas" FontSize="11" Foreground="#BAC2DE"/>
+										</Border>
+										<Border Name="SREG_N" Background="#181825" CornerRadius="4" Padding="6,3" Margin="2">
+											<TextBlock Text="N: 0" FontFamily="Consolas" FontSize="11" Foreground="#BAC2DE"/>
+										</Border>
+										<Border Name="SREG_Z" Background="#181825" CornerRadius="4" Padding="6,3" Margin="2">
+											<TextBlock Text="Z: 0" FontFamily="Consolas" FontSize="11" Foreground="#BAC2DE"/>
+										</Border>
+										<Border Name="SREG_C" Background="#181825" CornerRadius="4" Padding="6,3" Margin="2">
+											<TextBlock Text="C: 0" FontFamily="Consolas" FontSize="11" Foreground="#BAC2DE"/>
+										</Border>
+									</WrapPanel>
+
+									<TextBlock Text="Stack Pointer (SP):" Foreground="#CDD6F4" FontFamily="Segoe UI" FontSize="10"/>
+									<TextBlock Name="SP_Text" Text="SP = 0x08FF (SPL: 0xFF, SPH: 0x08)" Foreground="#89DCEB" FontFamily="Consolas" FontSize="11" Margin="0,2,0,0"/>
+								</StackPanel>
+							</Border>
+
+							<Rectangle Grid.Column="1" Fill="#313244" Width="1"/>
+
+							<!-- EEPROM Controller -->
+							<Border Grid.Column="2" Style="{StaticResource SubCard}">
+								<StackPanel>
+									<TextBlock Text="EEPROM Controller (1 KB)" Style="{StaticResource SubSectionHeader}"/>
+									<TextBlock Name="EEPROM_Text" Text="EECR: 0x00  |  EEDR: 0x00  |  EEAR: 0x0000" Foreground="#BAC2DE" FontFamily="Consolas" FontSize="11" Margin="0,2,0,4"/>
+									<TextBlock Text="Control Bits: EERE (Read), EEPE (Write), EEMPE (Master Write)" Foreground="#6C7086" FontSize="10" FontFamily="Segoe UI" Margin="0,2,0,0"/>
+								</StackPanel>
+							</Border>
+						</Grid>
+					</Border>
+				</TabItem>
+
+			</TabControl>
 
 		</StackPanel>
 		</ScrollViewer>

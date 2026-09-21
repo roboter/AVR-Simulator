@@ -86,5 +86,45 @@ namespace AVR_Simulator.Core.Tests
             Assert.False(interp.PORTB.PB4.Value, "PB4 should be LOW when only bit 5 is set");
             Assert.False(interp.PORTB.PB6.Value, "PB6 should be LOW when only bit 5 is set");
         }
+
+        [Fact]
+        public void PB5_PullUp_ActiveWhenInputAndPortHigh()
+        {
+            var interp = CreateFresh();
+            interp.IO[0x04] = 0x00; // DDRB = 0 (INPUT)
+            interp.IO[0x05] = 0x20; // PORTB bit 5 = 1 (Pull-Up enabled)
+
+            Assert.True(interp.PORTB.PB5.PullUp);
+            Assert.True(interp.PORTB.PB5.PortBit);
+            Assert.False(interp.PORTB.PB5.DDRBit);
+            Assert.Equal(5, interp.PORTB.PB5.BitIndex);
+        }
+
+        [Fact]
+        public void PB5_PullUp_InactiveWhenOutputEvenIfPortHigh()
+        {
+            var interp = CreateFresh();
+            interp.IO[0x04] = 0x20; // DDRB bit 5 = 1 (OUTPUT)
+            interp.IO[0x05] = 0x20; // PORTB bit 5 = 1
+
+            Assert.False(interp.PORTB.PB5.PullUp, "PullUp is not active on output pins");
+            Assert.True(interp.PORTB.PB5.PortBit);
+            Assert.True(interp.PORTB.PB5.DDRBit);
+        }
+
+        [Fact]
+        public void PB5_PullUp_SetterTogglesPortBitWhenInput()
+        {
+            var interp = CreateFresh();
+            interp.IO[0x04] = 0x00; // DDRB = 0 (INPUT)
+            interp.PORTB.PB5.PullUp = true;
+
+            Assert.True(interp.PORTB.PB5.PullUp);
+            Assert.Equal(0x20, interp.IO[0x05] & 0x20);
+
+            interp.PORTB.PB5.PullUp = false;
+            Assert.False(interp.PORTB.PB5.PullUp);
+            Assert.Equal(0x00, interp.IO[0x05] & 0x20);
+        }
     }
 }
