@@ -2,22 +2,28 @@ name: Build Check
 
 on:
   pull_request:
-    branches: [ main, master ]
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup .NET 10
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-    - name: Restore NuGet packages
-      run: dotnet restore "AVR Simulator.sln"
+      - name: Restore NuGet packages
+        run: dotnet restore "AVR Simulator.sln"
 
-    - name: Build Solution
-      run: dotnet build -c Release "AVR Simulator.sln"
+      - name: Build Solution
+        run: dotnet build -c Release "AVR Simulator.sln" --no-restore

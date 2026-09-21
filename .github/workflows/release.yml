@@ -13,29 +13,42 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-    - name: Setup .NET 10
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '10.0.x'
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
 
-    - name: Restore NuGet packages
-      run: dotnet restore "AVR Simulator.sln"
+      - name: Restore NuGet packages
+        run: dotnet restore "AVR Simulator.sln"
 
-    - name: Build Solution
-      run: dotnet build -c Release "AVR Simulator.sln"
+      - name: Build Solution
+        run: dotnet build -c Release "AVR Simulator.sln" --no-restore
 
-    - name: Prepare Release Artifacts
-      run: |
-        mkdir release
-        copy "AVR-Simulator.UI\bin\x86\Release\net10.0-windows\AVR Simulator.exe" release\
-        copy "LICENSE" release\
-        powershell Compress-Archive -Path release\* -DestinationPath AVR_Simulator.zip
+      - name: Prepare Release Artifacts
+        shell: powershell
+        run: |
+          New-Item -ItemType Directory -Force -Path release
 
-    - name: Create Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: AVR_Simulator.zip
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          Copy-Item `
+            "AVR-Simulator.UI\bin\x86\Release\net10.0-windows\AVR Simulator.exe" `
+            "release\"
+
+          Copy-Item "LICENSE" "release\"
+
+          Compress-Archive `
+            -Path "release\*" `
+            -DestinationPath "AVR_Simulator.zip" `
+            -Force
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: AVR Simulator ${{ github.ref_name }}
+          files: AVR_Simulator.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
