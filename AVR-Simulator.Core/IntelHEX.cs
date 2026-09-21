@@ -5,10 +5,12 @@ namespace AVR_Simulator
 {
 	public static class IntelHEX
 	{
-		public static byte[] Parse(string Path)
+		public static byte[] Parse(string Source)
 		{
-			using (Stream FS = new FileStream(Path, FileMode.Open, FileAccess.Read, FileShare.Read))
-			using (TextReader TR = new StreamReader(FS))
+			if (Source == null)
+				throw new ArgumentNullException(nameof(Source));
+
+			using (TextReader TR = CreateReader(Source))
 			{
 				string Line = TR.ReadLine();
 
@@ -74,6 +76,15 @@ namespace AVR_Simulator
 
 				return Program;
 			}
+		}
+
+		private static TextReader CreateReader(string Source)
+		{
+			if (Source.TrimStart().StartsWith(":"))
+				return new StringReader(Source);
+
+			Stream FS = new FileStream(Source, FileMode.Open, FileAccess.Read, FileShare.Read);
+			return new StreamReader(FS);
 		}
 	}
 }

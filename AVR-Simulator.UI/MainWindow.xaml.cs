@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Threading;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
@@ -38,6 +39,36 @@ namespace AVR_Simulator
 			public bool                   LastVal { get; set; } = false;
 		}
 
+		private class DisassemblyLine
+		{
+			public int Address { get; init; }
+			public int WordLength { get; init; }
+			public string AddressText { get; init; } = string.Empty;
+			public string OpcodeText { get; init; } = string.Empty;
+			public string HexBytesText { get; init; } = string.Empty;
+			public string Mnemonic { get; init; } = string.Empty;
+			public string TooltipText { get; init; } = string.Empty;
+			public bool IsCurrent { get; set; }
+			public bool IsLinked { get; set; }
+		}
+
+		private class HexByteCell
+		{
+			public int ByteAddress { get; init; }
+			public int WordAddress => ByteAddress / 2;
+			public string Text { get; init; } = string.Empty;
+			public string TooltipText { get; init; } = string.Empty;
+			public bool IsCurrent { get; set; }
+			public bool IsLinked { get; set; }
+		}
+
+		private class HexRow
+		{
+			public int StartByteAddress { get; init; }
+			public string AddressText { get; init; } = string.Empty;
+			public List<HexByteCell> Bytes { get; init; } = new();
+		}
+
 		// ── Brushes ─────────────────────────────────────────────────────────
 		private static readonly SolidColorBrush BrushHigh   = new(Color.FromRgb(0xA6, 0xE3, 0xA1));
 		private static readonly SolidColorBrush BrushLow    = new(Color.FromRgb(0x45, 0x47, 0x5A));
@@ -48,9 +79,19 @@ namespace AVR_Simulator
 		// ── State ───────────────────────────────────────────────────────────
 		private BackgroundWorker?     Worker;
 		private Atmega328Interpreter? Interpreter;
+		private readonly object       InterpreterLock = new();
+		private volatile bool         IsEmulationRunning;
 		private DispatcherTimer?      ADCTimer;
 		private DateTime              StartTime;
 		private List<PinRow>          AllPinRows = new();
+		private List<DisassemblyLine> DisassemblyLines = new();
+		private List<HexRow>          HexRows = new();
+		private Dictionary<int, DisassemblyLine> DisassemblyByAddress = new();
+		private DisassemblyLine?      CurrentDisassemblyLine;
+		private HexRow?               CurrentHexRow;
+		private List<HexByteCell>     CurrentHexBytes = new();
+		private readonly List<DisassemblyLine> LinkedDisassemblyLines = new();
+		private readonly List<HexByteCell>     LinkedHexBytes = new();
 
 		// ── Built-in Blink.hex path ──────────────────────────────────────────
 		private static string BlinkHexPath =>
@@ -116,6 +157,7 @@ namespace AVR_Simulator
 		{
 			StopEmulation();
 			ClearPortPanels();
+			ClearDisassembly();
 			CurrentHexPath = null;
 			Title = "AVR Simulator";
 			MenuClose.IsEnabled = false;
@@ -123,6 +165,41 @@ namespace AVR_Simulator
 		}
 
 		private void MenuExit_Click(object sender, RoutedEventArgs e) => Close();
+
+		private void RunButton_Click(object sender, RoutedEventArgs e)
+		{
+			if (Interpreter == null)
+				return;
+
+			IsEmulationRunning = true;
+			SetStatus(CurrentHexPath != null ? $"Running: {CurrentHexPath}" : "Running");
+		}
+
+		private void StopButton_Click(object sender, RoutedEventArgs e)
+		{
+			if (Interpreter == null)
+				return;
+
+			IsEmulationRunning = false;
+			SetStatus(CurrentHexPath != null ? $"Stopped: {CurrentHexPath}" : "Stopped");
+		}
+
+		private void StepButton_Click(object sender, RoutedEventArgs e)
+		{
+			if (Interpreter == null)
+				return;
+
+			IsEmulationRunning = false;
+
+			lock (InterpreterLock)
+			{
+				Interpreter.Execute();
+			}
+
+			RefreshDisassemblyHighlight(forceScroll: true);
+			RefreshPinRows();
+			SetStatus(CurrentHexPath != null ? $"Step: {CurrentHexPath}" : "Step");
+		}
 
 		// ── Load / Stop helpers ──────────────────────────────────────────────
 		private void LoadHex(string path)
@@ -139,6 +216,7 @@ namespace AVR_Simulator
 
 		private void StartEmulation(string hexPath)
 		{
+			IsEmulationRunning = true;
 			Worker = new BackgroundWorker { WorkerSupportsCancellation = true };
 			Worker.DoWork += Worker_DoWork;
 			Worker.RunWorkerAsync(hexPath);
@@ -146,6 +224,7 @@ namespace AVR_Simulator
 
 		private void StopEmulation()
 		{
+			IsEmulationRunning = false;
 			if (Worker is { IsBusy: true })
 				Worker.CancelAsync();
 			Interpreter = null;
@@ -161,10 +240,26 @@ namespace AVR_Simulator
 			if (File.Exists(hexPath))
 				Interpreter.Load(IntelHEX.Parse(hexPath));
 
-			Dispatcher.Invoke(BuildPortPanels);
+			Dispatcher.Invoke(() =>
+			{
+				BuildPortPanels();
+				BuildDisassembly();
+			});
 
 			for (; !Worker!.CancellationPending;)
-				Interpreter.Execute();
+			{
+				if (IsEmulationRunning)
+				{
+					lock (InterpreterLock)
+					{
+						Interpreter.Execute();
+					}
+				}
+				else
+				{
+					Thread.Sleep(1);
+				}
+			}
 		}
 
 		// ── ADC / DAC / port refresh timer ─────────────────────────────────
@@ -198,6 +293,9 @@ namespace AVR_Simulator
 
 			// GPIO LEDs
 			RefreshPinRows();
+
+			// Code window
+			RefreshDisassemblyHighlight();
 		}
 
 		// ── Clear port panels ────────────────────────────────────────────────
@@ -207,6 +305,20 @@ namespace AVR_Simulator
 			PortBPanel.ItemsSource = null;
 			PortCPanel.ItemsSource = null;
 			PortDPanel.ItemsSource = null;
+		}
+
+		private void ClearDisassembly()
+		{
+			DisassemblyLines.Clear();
+			HexRows.Clear();
+			DisassemblyByAddress.Clear();
+			CurrentDisassemblyLine = null;
+			CurrentHexRow = null;
+			CurrentHexBytes.Clear();
+			ClearLinkedHighlight();
+			DisassemblyList.ItemsSource = null;
+			HexList.ItemsSource = null;
+			CurrentInstructionText.Text = "PC: ----";
 		}
 
 		// ── Status bar helper ────────────────────────────────────────────────
@@ -298,6 +410,268 @@ namespace AVR_Simulator
 				(pd.PD0,"PD0"),(pd.PD1,"PD1"),(pd.PD2,"PD2"),(pd.PD3,"PD3"),
 				(pd.PD4,"PD4"),(pd.PD5,"PD5"),(pd.PD6,"PD6"),(pd.PD7,"PD7"),
 			});
+		}
+
+		// ── Code / disassembly window ──────────────────────────────────────
+		private void BuildDisassembly()
+		{
+			if (Interpreter == null)
+			{
+				ClearDisassembly();
+				return;
+			}
+
+			DisassemblyLines = new List<DisassemblyLine>();
+			HexRows = new List<HexRow>();
+			DisassemblyByAddress = new Dictionary<int, DisassemblyLine>();
+			int lineCount = GetDisassemblyLineCount(Interpreter);
+
+			for (int address = 0; address < lineCount;)
+			{
+				string text = Interpreter.Disassemble(address);
+				string[] parts = text.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+				string opcode = parts.Length > 1 && IsHexWord(parts[1])
+					? $"{parts[0]} {parts[1]}"
+					: parts.FirstOrDefault() ?? string.Empty;
+				string mnemonic = parts.Length > 1 && IsHexWord(parts[1])
+					? string.Join(" ", parts.Skip(2))
+					: string.Join(" ", parts.Skip(1));
+				int wordLength = Math.Min(Interpreter.GetInstructionWordLength(address), lineCount - address);
+				string hexBytes = FormatInstructionBytes(Interpreter, address, wordLength);
+
+				var line = new DisassemblyLine
+				{
+					Address = address,
+					WordLength = wordLength,
+					AddressText = string.Format("{0:X4}", address),
+					OpcodeText = opcode,
+					HexBytesText = hexBytes,
+					Mnemonic = mnemonic,
+					TooltipText = $"{address:X4}  {opcode}  {mnemonic}",
+				};
+
+				DisassemblyLines.Add(line);
+
+				for (int offset = 0; offset < wordLength; offset++)
+					DisassemblyByAddress[address + offset] = line;
+
+				address += wordLength;
+			}
+
+			DisassemblyList.ItemsSource = DisassemblyLines;
+			BuildHexRows(Interpreter, lineCount);
+			HexList.ItemsSource = HexRows;
+			RefreshDisassemblyHighlight(forceScroll: true);
+		}
+
+		private void BuildHexRows(AVRInterpreter interpreter, int wordCount)
+		{
+			const int bytesPerRow = 16;
+			int byteCount = wordCount * 2;
+
+			for (int rowStart = 0; rowStart < byteCount; rowStart += bytesPerRow)
+			{
+				var row = new HexRow
+				{
+					StartByteAddress = rowStart,
+					AddressText = string.Format("{0:X4}", rowStart),
+				};
+
+				for (int byteAddress = rowStart; byteAddress < Math.Min(rowStart + bytesPerRow, byteCount); byteAddress++)
+				{
+					int wordAddress = byteAddress / 2;
+					ushort word = interpreter.Flash[wordAddress];
+					byte value = (byte)((byteAddress % 2 == 0) ? (word & 0xFF) : (word >> 8));
+					string tooltip = DisassemblyByAddress.TryGetValue(wordAddress, out DisassemblyLine? line)
+						? line.TooltipText
+						: string.Empty;
+
+					row.Bytes.Add(new HexByteCell
+					{
+						ByteAddress = byteAddress,
+						Text = string.Format("{0:X2}", value),
+						TooltipText = tooltip,
+					});
+				}
+
+				HexRows.Add(row);
+			}
+		}
+
+		private static string FormatInstructionBytes(AVRInterpreter interpreter, int address, int wordLength)
+		{
+			var bytes = new List<string>();
+
+			for (int offset = 0; offset < wordLength; offset++)
+			{
+				ushort word = interpreter.Flash[address + offset];
+				bytes.Add(string.Format("{0:X2}", word & 0xFF));
+				bytes.Add(string.Format("{0:X2}", word >> 8));
+			}
+
+			return string.Join(" ", bytes);
+		}
+
+		private static bool IsHexWord(string text)
+		{
+			return text.Length == 4 && text.All(Uri.IsHexDigit);
+		}
+
+		private static int GetDisassemblyLineCount(AVRInterpreter interpreter)
+		{
+			int lastNonZero = Array.FindLastIndex(interpreter.Flash, word => word != 0);
+			int visibleTail = Math.Max(lastNonZero + 8, 32);
+			return Math.Min(Math.Max(visibleTail, 0), interpreter.Flash.Length);
+		}
+
+		private void RefreshDisassemblyHighlight(bool forceScroll = false)
+		{
+			if (Interpreter == null || DisassemblyLines.Count == 0)
+				return;
+
+			int address = Interpreter.LastExecutedPC;
+			if (!DisassemblyByAddress.TryGetValue(address, out DisassemblyLine? line))
+				return;
+
+			if (!forceScroll && ReferenceEquals(line, CurrentDisassemblyLine))
+				return;
+
+			if (CurrentDisassemblyLine != null)
+				CurrentDisassemblyLine.IsCurrent = false;
+
+			foreach (HexByteCell byteCell in CurrentHexBytes)
+				byteCell.IsCurrent = false;
+
+			line.IsCurrent = true;
+			CurrentHexBytes = GetHexBytesForInstruction(line).ToList();
+			foreach (HexByteCell byteCell in CurrentHexBytes)
+				byteCell.IsCurrent = true;
+
+			CurrentHexRow = HexRows.FirstOrDefault(row =>
+				line.Address * 2 >= row.StartByteAddress &&
+				line.Address * 2 < row.StartByteAddress + row.Bytes.Count);
+			CurrentDisassemblyLine = line;
+			CurrentInstructionText.Text = $"PC: {address:X4}   {line.OpcodeText}   {line.Mnemonic}";
+
+			DisassemblyList.Items.Refresh();
+			HexList.Items.Refresh();
+			DisassemblyList.ScrollIntoView(line);
+			if (CurrentHexRow != null)
+				HexList.ScrollIntoView(CurrentHexRow);
+		}
+
+		private IEnumerable<HexByteCell> GetHexBytesForInstruction(DisassemblyLine line)
+		{
+			int startByteAddress = line.Address * 2;
+			int endByteAddress = startByteAddress + line.WordLength * 2;
+
+			return HexRows
+				.SelectMany(row => row.Bytes)
+				.Where(byteCell => byteCell.ByteAddress >= startByteAddress && byteCell.ByteAddress < endByteAddress);
+		}
+
+		private void DisassemblyList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (DisassemblyList.SelectedItem is DisassemblyLine line)
+				HighlightLinkedInstruction(line, scrollHex: true);
+		}
+
+		private void HexList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (HexList.SelectedItem is HexRow row)
+				HighlightLinkedHexRow(row);
+		}
+
+		private void HexByte_MouseEnter(object sender, MouseEventArgs e)
+		{
+			if (((FrameworkElement)sender).DataContext is HexByteCell cell)
+				HighlightLinkedByte(cell);
+		}
+
+		private void HexByte_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (((FrameworkElement)sender).DataContext is HexByteCell cell)
+			{
+				HighlightLinkedByte(cell);
+				e.Handled = true;
+			}
+		}
+
+		private void HighlightLinkedByte(HexByteCell cell)
+		{
+			if (DisassemblyByAddress.TryGetValue(cell.WordAddress, out DisassemblyLine? line))
+				HighlightLinkedInstruction(line, scrollDisassembly: true);
+		}
+
+		private void HighlightLinkedInstruction(DisassemblyLine line, bool scrollDisassembly = false, bool scrollHex = false)
+		{
+			ClearLinkedHighlight();
+
+			line.IsLinked = true;
+			LinkedDisassemblyLines.Add(line);
+
+			foreach (HexByteCell byteCell in GetHexBytesForInstruction(line))
+			{
+				byteCell.IsLinked = true;
+				LinkedHexBytes.Add(byteCell);
+			}
+
+			RefreshCodeViews();
+
+			if (scrollDisassembly)
+				DisassemblyList.ScrollIntoView(line);
+
+			if (scrollHex)
+			{
+				HexRow? row = FindHexRowForByteAddress(line.Address * 2);
+				if (row != null)
+					HexList.ScrollIntoView(row);
+			}
+		}
+
+		private void HighlightLinkedHexRow(HexRow row)
+		{
+			ClearLinkedHighlight();
+
+			foreach (HexByteCell byteCell in row.Bytes)
+			{
+				byteCell.IsLinked = true;
+				LinkedHexBytes.Add(byteCell);
+
+				if (DisassemblyByAddress.TryGetValue(byteCell.WordAddress, out DisassemblyLine? line) &&
+				    !LinkedDisassemblyLines.Contains(line))
+				{
+					line.IsLinked = true;
+					LinkedDisassemblyLines.Add(line);
+				}
+			}
+
+			RefreshCodeViews();
+		}
+
+		private HexRow? FindHexRowForByteAddress(int byteAddress)
+		{
+			return HexRows.FirstOrDefault(row =>
+				byteAddress >= row.StartByteAddress &&
+				byteAddress < row.StartByteAddress + row.Bytes.Count);
+		}
+
+		private void ClearLinkedHighlight()
+		{
+			foreach (DisassemblyLine line in LinkedDisassemblyLines)
+				line.IsLinked = false;
+
+			foreach (HexByteCell byteCell in LinkedHexBytes)
+				byteCell.IsLinked = false;
+
+			LinkedDisassemblyLines.Clear();
+			LinkedHexBytes.Clear();
+		}
+
+		private void RefreshCodeViews()
+		{
+			DisassemblyList.Items.Refresh();
+			HexList.Items.Refresh();
 		}
 
 		private void AddPinRows(ItemsControl panel,

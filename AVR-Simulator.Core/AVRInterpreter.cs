@@ -204,6 +204,7 @@ namespace AVR_Simulator
 		public MappedArray<byte> SRAM { get; protected set; }
 
 		public int PC { get; set; }
+		public int LastExecutedPC { get; private set; }
 		public ushort Instruction { get; set; }
 		public ushort Instruction2 { get; set; }
 		
@@ -388,6 +389,7 @@ namespace AVR_Simulator
 
 			SP = (ushort)SRAM.End;
 			PC = 0;
+			LastExecutedPC = 0;
 		}
 
 		#region Load
@@ -421,10 +423,34 @@ namespace AVR_Simulator
 				return;
 			}
 
+			LastExecutedPC = PC;
 			Instruction = Flash[PC];
 			Instruction2 = (PC + 1 < Flash.Length) ? Flash[PC + 1] : (ushort)0;
 
 			InstructionMap[Instruction].Func();
+		}
+
+		public virtual string Disassemble(int address)
+		{
+			if (address < 0 || address >= Flash.Length)
+				return string.Empty;
+
+			ushort instruction = Flash[address];
+			InstructionFunc instructionFunc = InstructionMap[instruction];
+			string mnemonic = instructionFunc.ToString().Replace('_', ' ');
+
+			if (instructionFunc.Double && address + 1 < Flash.Length)
+				return string.Format("{0:X4} {1:X4}  {2}", instruction, Flash[address + 1], mnemonic);
+
+			return string.Format("{0:X4}       {1}", instruction, mnemonic);
+		}
+
+		public virtual int GetInstructionWordLength(int address)
+		{
+			if (address < 0 || address >= Flash.Length)
+				return 1;
+
+			return InstructionMap[Flash[address]].Double ? 2 : 1;
 		}
 
 		protected class InstructionFunc

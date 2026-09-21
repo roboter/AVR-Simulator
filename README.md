@@ -16,6 +16,11 @@
 
 ---
 
+## Screenshot
+
+![AVR Simulator Screenshot 1](screenshots/Screenshot%202026-09-21%20141052.png)
+
+
 ## ✨ Features
 
 | Feature | Description |
