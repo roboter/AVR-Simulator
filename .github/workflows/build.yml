@@ -15,8 +15,6 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
-        global-json-file: 'Directory.Build.props'
-        source-priority: 'critical' # Make NuGet.org primary
 
     - name: Restore NuGet packages
       run: dotnet restore "AVR Simulator.sln"

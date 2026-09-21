@@ -22,8 +22,6 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
-        global-json-file: 'Directory.Build.props'
-        source-priority: 'critical'
 
     - name: Restore NuGet packages
       run: dotnet restore "AVR Simulator.sln"
