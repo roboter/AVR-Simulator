@@ -77,7 +77,7 @@
    ```
 4. The executable will be at:
    ```
-   bin/x86/Release/net10.0-windows/AVR Simulator.exe
+   .\AVR-Simulator.UI\bin\x86\Release\net10.0-windows\AVR Simulator.exe
    ```
 
 ---
